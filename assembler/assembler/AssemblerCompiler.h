@@ -1,7 +1,10 @@
-#ifndef ASSEMBLER_HANDLER_H
-#define ASSEMBLER_HANDLER_H
+#ifndef ASSEMBLER_COMPILER_H
+#define ASSEMBLER_COMPILER_H
 
 #include <stdio.h>
-int compile(char*);
+
+// the main assembler procedure.
+// input : fileName - char* containing the file name to compiple
+void compile(char* fileName);
 
 #endif

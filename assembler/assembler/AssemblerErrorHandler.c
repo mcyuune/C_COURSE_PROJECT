@@ -2,23 +2,29 @@
 
 #include "AssemblerErrorHandler.h"
 #include "assemblerGlobals.h"
+#include "AssemblerDictionaries.h"
 
 int errorCntr = 0;
 
-void init_errors()
+// this function intalize the assemblerErrorHandler and need to be called in the 
+// begining of using AssemblerErrorHandler
+void init_AssemblerErrorHandler()
 {
 	Assembler_Error_Code_Table[LABLE_LEN_ERR]				= "lable must be maximum of 30 characters";
 	Assembler_Error_Code_Table[LABLE_EMPTY_FIRST_VALUE_ERR] = "Lable first character empty";
 	Assembler_Error_Code_Table[LABLE_FIRST_ALPHA_ERR]		= "Lable first character must be alpabatic value";
 	Assembler_Error_Code_Table[LABLE_SAVED_SIGN_ERR]		= "Lable contains saved chars ";
-	Assembler_Error_Code_Table[LABLE_SAVED_WORD_ERR]		= "- value already defined, cant use saved word as a lable";
+	Assembler_Error_Code_Table[LABLE_ALONE_ERR]				= "Lable must be followed by instruction or command ";
+
+	Assembler_Error_Code_Table[LABLE_SAVED_WORD_ERR]		= "value already defined, cant use saved word as a lable";
 	Assembler_Error_Code_Table[UNRECOGNIZE_INSTRUCTION_ERR] = "unrecognized instruction found";
 	Assembler_Error_Code_Table[STRING_DEFINE_ERR]			= "string values must be surrended by \"";
 	Assembler_Error_Code_Table[STRING_EMPTY_ERR]			= "string values not found";
 	Assembler_Error_Code_Table[UNVALID_NUMBER_ERR]			= "unvalid valud found. data contains numbers only";
 	Assembler_Error_Code_Table[SPACE_IN_NUMBER_ERR]			= "unexpected space was found. unvalid number";
 	Assembler_Error_Code_Table[EXTRA_COMMA_IN_NUMBER_ERR]	= "unexpected comma was found. unvalid number";
-	
+
+	Assembler_Error_Code_Table[EMPTY_INSTRUCTION_LABLE_ERR]	= "lable not found. instruction must have lable name";
 	Assembler_Error_Code_Table[EMPTY_DATA_ERR]				= "data instruction must have values";
 	Assembler_Error_Code_Table[UNRECOGNIZE_SIGN_ERR]		= "unrecognized sign found ";
 	Assembler_Error_Code_Table[LINE_LEN_ERR]				= "assambler file line must be maximum of 80 characters";
@@ -41,8 +47,14 @@ void init_errors()
 	Assembler_Error_Code_Table[TIME_UNVALID_ERR]            = "command preform times value unvalid. times can be 0 - 3";
 }
 
-void log_error(char* source, int errCode, char* value)
+// this function write error to output
+// input: 1. char* the error source,
+//        2. int - error num
+//        3. char* - the file error was found
+void log_error(const char* source, const int errCode, const char* value)
 {
+	++errorCntr;
+
 	fprintf(stderr, source);
 	fprintf(stderr, ":");
 	fprintf(stderr, "%d ", errCode);
@@ -58,6 +70,30 @@ void log_error(char* source, int errCode, char* value)
 	}
 
 	fprintf(stderr, " in file \"%s\" - line %d \n", CURR_FILE_NAME, LINE_NUMBER);
+}
 
-	errorCntr++;
+// this function start file log process (call when starting new file processing)
+void log_file_start()
+{
+	errorCntr = 0;
+
+	fprintf(stderr, "starting compilation for %s...", CURR_FILE_NAME);
+	fprintf(stderr, "%c%c" ,LINE_TERMINATOR, LINE_TERMINATOR);
+}
+
+// this function close file log process (call when ending curr file processing)
+void log_file_end()
+{
+	// if error were found
+	if (errorCntr > 0)
+	{
+		fprintf(stderr, "%c%c" ,LINE_TERMINATOR, LINE_TERMINATOR);
+		fprintf(stderr, "compilation failed for file %s . %d errors found", CURR_FILE_NAME, errorCntr);
+	}
+	else
+	{
+		fprintf(stderr, "compilede seccussfully.");
+	}
+
+	fprintf(stderr, "%c%c%c%c" ,LINE_TERMINATOR, LINE_TERMINATOR, LINE_TERMINATOR, LINE_TERMINATOR);
 }

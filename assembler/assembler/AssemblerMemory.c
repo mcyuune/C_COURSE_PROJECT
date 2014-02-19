@@ -1,37 +1,50 @@
 #include <stdlib.h>
 
 #include "assemblerGlobals.h"
+#include "AssemblerDictionaries.h"
 #include "AssemblerMemory.h"
 
+// define struct for word : word part 10 bits
 struct 
 {
 	unsigned int Part : 10;
 } wordPart;
 
+// create type word - have 2 wordParts - 20 bits
 typedef struct wordPart word[2];
 
+//
 struct addressTable
 {
 	char* lable;
 	word* address;
 };
 
+// define struct for all line possiblle parts
 struct lineData
 {
 	char* lable;
-	int command;
-	int instruction;
+
+	int   command;
+
+	int   instruction;
 	char* instructionData;
-	int*   instructionInt;
-	int type;
-	int type_val_1;
-	int type_val_2;
-	int time;
-	int offset;
+	int*  instructionInt;
+	char* instructionLable;
+
+	int   type;
+	int   type_val_1;
+	int   type_val_2;
+
+	int   time;
+
+	int   offset;
 	char* offsetLable;
-	int operand1Type;
+
+	int   operand1Type;
 	char* operand1;
-	int operand2Type;
+
+	int   operand2Type;
 	char* operand2;
 };
 
@@ -42,7 +55,8 @@ int DC;
 word* MemorySegment;
 word* DataSegment;
 
-void init_line_data()
+// this function intalize temp line memory for new line
+void init_temp_line_space()
 {
 	currLine.lable = (char*) malloc(sizeof(char) * MAXLABLE);
 	currLine.lable[0] = Assembler_Signs_Code_Table[STRING_TERMINATOR];
@@ -77,7 +91,8 @@ void init_line_data()
 	currLine.operand2Type = -1;
 }
 
-void save_line()
+// this function saves curr tmp line data to the actually memory
+void save_line_to_memory()
 {
 	int i;
 
@@ -104,60 +119,67 @@ void save_line()
 	}
 }
 
-void temp_save_value(int value_type, int int_value, char* string_value, int* int_array_value)
+// this function checks if the char* exists in the entered signs dicrionay
+// input:   1. value_type - enum for the line type value to save
+//          2. value - void* pointer to the value
+void update_temp_line_value(const int value_type, const void* value)
 {
 	switch (value_type)
 	{
 		case LABLE:
-			currLine.lable = string_value;
+			currLine.lable = (char*) value;
 			break;
 		case OFFSET_DATA:
-			currLine.offsetLable = string_value;
+			currLine.offsetLable = (char*) value;
 			break;
 		case INSTRUCTION_DATA:
-			currLine.instructionData = string_value;
+			currLine.instructionData = (char*) value;
+			break;
+		case INSTRUCTION_LABLE:
+			currLine.instructionLable = (char*) value;
 			break;
 		case INSTRUCTION_INT:
-			currLine.instructionInt= int_array_value;
+			currLine.instructionInt= (int*) value;
 			break;
 		case OPERAND_1_DATA:
-			currLine.operand1 = string_value;
+			currLine.operand1 = (char*) value;
 			break;
 		case OPERAND_2_DATA:
-			currLine.operand1 = string_value;
+			currLine.operand1 = (char*) value;
 			break;
 
 		case TYPE:
-			currLine.type = int_value;
+			currLine.type = *((int*) value);
 			break;
 		case TIME:
-			currLine.time = int_value;
+			currLine.time = *((int*) value);
 			break;
 		case TYPE_VAL_1:
-			currLine.type_val_1 = int_value;
+			currLine.type_val_1 = *((int*) value);
 			break;
 		case TYPE_VAL_2:
-			currLine.type_val_2 = int_value;
+			currLine.type_val_2 = *((int*) value);
 			break;
 		case COMMAND:
-			currLine.command = int_value;
+			currLine.command = *((int*) value);
 			break;
 		case INSTRUCTION:
-			currLine.instruction = int_value;
+			currLine.instruction = *((int*) value);
 			break;
 		case OFFSET:
-			currLine.offset = int_value;
+			currLine.offset = *((int*) value);
 			break;
 		case OPERAND_1_TYPE:
-			currLine.operand1Type = int_value;
+			currLine.operand1Type = *((int*) value);
 			break;
 		case OPERAND_2_TYPE:
-			currLine.operand2Type = int_value;
+			currLine.operand2Type = *((int*) value);
 			break;
 	}
 }
 
-void init_memory()
+// this function intalize the assembler memory for use
+void init_AssemblerMemory()
 {
 	DataSegment = malloc (sizeof (word) * 80);
 	MemorySegment = malloc (sizeof (word) * 2000);

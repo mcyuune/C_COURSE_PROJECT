@@ -6,158 +6,224 @@
 #include "AssemblerParser.h"
 #include "AssemblerErrorHandler.h"
 #include "assemblerGlobals.h"
+#include "AssemblerDictionaries.h"
 #include "AssemblerMemory.h"
 
-
+// instruction inner function
 int is_proper_data(char**);
 int is_proper_string(char**);
-int is_proper_operand(char** operandEnd, int* arrOperandTypes, int CommandID, int operandNum);
-int is_proper_direct_operand(char* operandValue);
-int is_proper_index_operand(char* operandValue);
-int is_proper_register_operand(char* operandValue);
-int is_proper_immediate_operand(char* operandValue);
-int is_proper_lable_for_command(char* lable);
+
+// command inner function
+int is_proper_operand(char** operandEnd, const int* arrOperandTypes, const int CommandID, const int operandNum);
+int is_proper_lable_for_command(const char* lable);
+int is_proper_times(char** timeValue);
+int is_proper_type(char** typeValue, int cntr);
+
+// operand inner functions
+int is_proper_register_operand(const char* operandValue);
+int is_proper_direct_or_index_operand(const char*, int*);
+int is_proper_immediate_operand(const char* operandValue);
 
 
+// check if the lable is proper according to the assembler roles
+// input - 1. lableStart char pointer to the lable start,
+//	       2. lableEnd char pointer - points to lable end 
+//         3. the first char of the line - to terminate its not empty
+// return - int value 1 if seccuss, 0 if fails
+int is_proper_lable(const char* lableStart, const char* lableEnd, const char firstLine, const int lableType)
+{	
+	int ret_val = 0;
+	int is_parsed = 0;
 
-int is_proper_lable(char* lableStart, char** lableEnd, char firstLine)
-{ 
-	char* lable = create_word_by_pointers(lableStart, (*lableEnd));
-	char* lableParsed; 
-	
-	if (strchr(lable, Assembler_Signs_Code_Table[LABLE_SIGN]) == STRING_TERMINATOR)
+	char* lableParsed;
+
+	// create the lable, and paresed lable without end :
+	char* lable = create_word_by_pointers(lableStart, lableEnd);
+
+	if (!lable)
 	{
-		lableParsed = lable;
+		log_error(ASSEMBLER_VALIDATOR, EMPTY_INSTRUCTION_LABLE_ERR, "");
 	}
-	else
+	// if lable contain lable sign
+	else 
 	{
-		lableParsed =  create_word_by_pointers(lableStart, (*lableEnd) - 1);
+		if (strchr(lable, Assembler_Signs_Code_Table[LABLE_SIGN]) != NULL)
+		{
+			lableParsed =  create_word_by_pointers(lableStart, lableEnd - 1);
+		}
+		else
+		{
+			lableParsed = lable;
+			is_parsed = 1;
+		}
+
+		// check first character not empty or if there is only :
+		if (isspace(firstLine) || lableEnd - lableStart == 0)
+		{
+			log_error(ASSEMBLER_VALIDATOR ,LABLE_EMPTY_FIRST_VALUE_ERR, lable);
+		}
+		// check first lable character alpa
+		else if (!isalpha(*lableStart))
+		{
+			log_error(ASSEMBLER_VALIDATOR , LABLE_FIRST_ALPHA_ERR, lable);
+		}
+		// chack if saved word
+		else if (is_saved_word(lableParsed, Assembler_Command_Code_Table, COMMAND_NUMBER) >= 0 ||
+				 is_saved_word(lableParsed, Assembler_instruction_Code_Table, INSTRUCTION_NUMBER) >= 0 || 
+				 is_saved_word(lableParsed, Assembler_registers_Code_Table, REGISTERS_NUMBER) >= 0 
+				)
+		{
+			log_error(ASSEMBLER_VALIDATOR , LABLE_SAVED_WORD_ERR, lable);
+		}
+		// check if lable contains saved signs
+		else if(is_contain_saved_sign(lableParsed, Assembler_Signs_Code_Table, SIGN_NUMBER) >= 0)
+		{
+			log_error(ASSEMBLER_VALIDATOR , LABLE_SAVED_SIGN_ERR, lable);
+		}
+		// check lable len no more then 30
+		else if (lableEnd - lableStart >= MAXLABLE)
+		{
+			log_error(ASSEMBLER_VALIDATOR , LABLE_LEN_ERR, lable);
+		}
+		else
+		{
+			ret_val = 1;
+
+			update_temp_line_value(lableType, lableParsed);
+		}
+
+		// free memory usage
+		free(lable);
+
+		if (lableParsed && !is_parsed)
+		{
+			free(lableParsed);
+		}
 	}
 
-	// check first character not empty or if there is only :
-	if (isspace(firstLine) || *lableEnd - lableStart == 0)
-	{
-		log_error(ASSEMBLER_VALIDATOR ,LABLE_EMPTY_FIRST_VALUE_ERR, lable);
-	}
-	// check first lable character alpa
-	else if (!isalpha(*lableStart))
-	{
-		log_error(ASSEMBLER_VALIDATOR , LABLE_FIRST_ALPHA_ERR, lable);
-	}
-	// chack if saved word
-	else if (is_saved_word(lableParsed, Assembler_Command_Code_Table, COMMAND_NUMBER) >= 0 ||
-			 is_saved_word(lableParsed, Assembler_instruction_Code_Table, INSTRUCTION_NUMBER) >= 0 || 
-			 is_saved_word(lableParsed, Assembler_registers_Code_Table, REGISTERS_NUMBER) >= 0 
-			)
-	{
-		log_error(ASSEMBLER_VALIDATOR , LABLE_SAVED_WORD_ERR, lable);
-	}
-	else if(is_contain_saved_sign(lableParsed, Assembler_Signs_Code_Table, SIGN_NUMBER))
-	{
-		log_error(ASSEMBLER_VALIDATOR , LABLE_SAVED_SIGN_ERR, lable);
-	}
-	// check lable len no more then 30
-	else if (*lableEnd - lableStart - 1 > MAXLABLE)
-	{
-		log_error(ASSEMBLER_VALIDATOR , LABLE_LEN_ERR, lable);
-	}
-	else
-	{
-		temp_save_value(LABLE, 0, lableParsed, 0);
-
-		return 1;
-	}
-
-	return 0;
+	return ret_val;
 }
 
-int is_proper_instruction(char* instructionStart, char** InstructionEnd)
+// check if the instruction is proper according to the assembler roles
+// input - 1. char pointer to the instruction start,
+//	       2. pointer to char pointer - that is a pointer to the current position in the current line processed 
+// return - int value 1 if seccuss, 0 if fails
+int is_proper_instruction(const char* instructionStart, char** InstructionEnd)
 {
-	char* lableStart  = (char*) malloc (sizeof(char) * MAXLINE);
+	int ret_val = 0;
 
+	char* lableStart;
 	char* instruction = create_word_by_pointers(instructionStart + 1, *InstructionEnd);
 
-	(*InstructionEnd)++;
-
-	// if its data instruction
-	if (strcmp(instruction, Assembler_instruction_Code_Table[DATA]) == 0)
+	if (!instruction)
 	{
-		return is_proper_data(InstructionEnd);
+		log_error(ASSEMBLER_VALIDATOR, UNRECOGNIZE_SIGN_ERR, "");
 	}
-	// if it string instruction
-	else if (strcmp(instruction, Assembler_instruction_Code_Table[STRING]) == 0)
-	{
-		return is_proper_string(InstructionEnd);
-	}
-	// if it extern instruction or entry 
-	else if (strcmp(instruction, Assembler_instruction_Code_Table[EXTERN]) == 0 ||
-		     strcmp(instruction, Assembler_instruction_Code_Table[ENTRY]) == 0)
-	{
-		lableStart = find_word_start(*InstructionEnd);
-		*InstructionEnd = find_word_end(lableStart);
-		return is_proper_lable(lableStart, InstructionEnd, lableStart[0]);
-	}
-	// else it is just rubbish
 	else
 	{
-		log_error(ASSEMBLER_VALIDATOR ,UNRECOGNIZE_INSTRUCTION_ERR, instruction);
-		return 0;
+		(*InstructionEnd)++;
+
+		// if its data instruction
+		if (strcmp(instruction, Assembler_instruction_Code_Table[DATA]) == 0)
+		{
+			// check if orioer data
+			ret_val =  is_proper_data(InstructionEnd);
+		}
+		// if it string instruction
+		else if (strcmp(instruction, Assembler_instruction_Code_Table[STRING]) == 0)
+		{
+			// check if proper string
+			ret_val =  is_proper_string(InstructionEnd);
+		}
+		// if it extern instruction or entry 
+		else if (strcmp(instruction, Assembler_instruction_Code_Table[EXTERN]) == 0 ||
+				 strcmp(instruction, Assembler_instruction_Code_Table[ENTRY]) == 0)
+		{
+			// find the lable start
+			lableStart = find_word_start(*InstructionEnd);
+
+			// increase the line pointer to the lable end
+			*InstructionEnd += mov_to_word_end(lableStart, lableStart - *InstructionEnd);
+
+			// check if the lable is valid
+			ret_val = is_proper_lable(lableStart, *InstructionEnd, lableStart[0], INSTRUCTION_LABLE);
+
+			//free memory 
+			free(instruction);
+		}
+		// else it is just rubbish
+		else
+		{
+			log_error(ASSEMBLER_VALIDATOR ,UNRECOGNIZE_INSTRUCTION_ERR, instruction);
+		}
 	}
+
+	return ret_val;
 }
 
+// check if the instruction data value is proper according to the assembler roles
+// input - pointer to char pointer - that is a pointer to the current position in the current line processed 
+// return - int value 1 if seccuss, 0 if fails
 int is_proper_data(char** endInstruction)
 {	
+	// array for saving the data number values
 	int numbers[MAXLINE];
 	int last_i = -1;
-	int j = 0;
-	int i = 0;
+	int j = 0, i = 0;
+	int value[1];
+	int is_empty = 1;
+
 	int sign = 1;
 	int tmp_number = 0;
 
+	int ret_val = 1;
+
 	// go until end of string
-	while (**endInstruction != STRING_TERMINATOR) 
+	while (**endInstruction != STRING_TERMINATOR && **endInstruction != LINE_TERMINATOR) 
 	{	
-		// if space do nothing
-		if (isspace(**endInstruction))
+		// if its comma or new line - curr number is over
+		if (**endInstruction == Assembler_Signs_Code_Table[COMMA_SIGN])
 		{
-			;
-		}
-		// if its comma 
-		else if (**endInstruction == Assembler_Signs_Code_Table[COMMA_SIGN] ||
-				 **endInstruction == LINE_TERMINATOR)
-		{
-			// if there was comma without number before
-			if (last_i < i ) 
+			// if there was comma before, but no number between
+			if (last_i < i) 
 			{
 				log_error(ASSEMBLER_VALIDATOR ,EXTRA_COMMA_IN_NUMBER_ERR,*endInstruction);
-				return 0;
+				i = -1;
+				break;
 			}
-			// if everything ok - end curr number
 			else
 			{
-				i++;
+				// if everything ok - move to next number in array
+				i++;	
 			}
-				
 		}
-		// if it plus or minus
+		// if it plus or minus sign
 		else if (**endInstruction == Assembler_Signs_Code_Table[PLUS_SIGN] ||
 				 **endInstruction == Assembler_Signs_Code_Table[MINUS_SIGN])
 		{
 			// checki digits from next pose
 			j = 1;
 
+			// if minus - update sign
 			if (**endInstruction == Assembler_Signs_Code_Table[MINUS_SIGN]) 
 			{
 				sign = -1;
 			}
 
 		}
+		else if (isspace(**endInstruction))
+		{
+			;
+		}
 		// if its not digit and not all other options
 		else if (!isdigit((*endInstruction)[j]))
 		{
 			// unrecognized sign
-			log_error(ASSEMBLER_VALIDATOR ,UNVALID_NUMBER_ERR,*endInstruction);
-			return 0;
+			log_error(ASSEMBLER_VALIDATOR ,UNVALID_NUMBER_ERR, *endInstruction);
+			ret_val = 0;
+			i = -1;
+
+			break;
 		}
 		// else if its a digit
 		if (isdigit((*endInstruction)[j]))
@@ -172,19 +238,20 @@ int is_proper_data(char** endInstruction)
 			// if there was number seperated by space and not by comma (its save in the array)
 			if (last_i == i)
 			{
-				log_error(ASSEMBLER_VALIDATOR ,UNVALID_NUMBER_ERR,*endInstruction);
+				log_error(ASSEMBLER_VALIDATOR ,UNVALID_NUMBER_ERR, *endInstruction);
 				return 0;
 			}
 			// if everything ok - save the number!
 			else
 			{
 				numbers[i] = tmp_number * sign;
-				sign = 1;
-				tmp_number = 0;
-				last_i  = i;
+				is_empty = 0;
 				// jump over all the digits but do extra for the increase in the end of loop
 				(*endInstruction) += (j - 1);
 
+				sign = 1;
+				tmp_number = 0;
+				last_i  = i;
 				j = 0;
 			}
 		}	
@@ -192,89 +259,144 @@ int is_proper_data(char** endInstruction)
 		(*endInstruction)++;
 	}
 
-	if (i == 0)
+	// if i == 0 - no number douns
+	if (is_empty)
 	{
 		log_error(ASSEMBLER_VALIDATOR ,EMPTY_DATA_ERR ,"");
-		return 0;
+		ret_val = 0;
 	}
 
-	temp_save_value(INSTRUCTION, DATA, 0, 0);
-	temp_save_value(INSTRUCTION_DATA, 0, 0, numbers);
+	// if foramt is ok
+	if (ret_val == 1)
+	{
+		// save the instruction values
+		value[0] = DATA;
+		update_temp_line_value(INSTRUCTION, value);
+		update_temp_line_value(INSTRUCTION_DATA, numbers);
+	}
 
-	return 1;
+	return ret_val;
 }
 
+// check if the instruction string value is proper according to the assembler roles
+// input - pointer to char pointer - that is a pointer to the current position in the current line processed 
+// return - int value 1 if seccuss, 0 if fails
 int is_proper_string(char** endInstruction)
 {
+	int ret_val = 0;
+	int value[1];
 	char* string;
-	char* stringStart = find_word_start((*endInstruction) + 1);
-	char* stringEnd;
+
+	// find next word start
+	char* stringStart = *endInstruction;
+	char* stringEnd = stringStart;
 	
+	stringStart += mov_to_word_start(stringStart);
+
+	// if next word exists
 	if (*stringStart != STRING_TERMINATOR && 
 		*stringStart != LINE_TERMINATOR)
 	{
-		stringEnd = find_word_end(stringStart);
+		// find word end
+		stringEnd += mov_to_word_end(stringStart, stringStart - stringEnd);
 
+		// create the string
 		string = create_word_by_pointers(stringStart, stringEnd);
 
-		if (*stringStart != STRING_SIGN ||
-			*stringEnd != STRING_SIGN)
+		// if string value not in " "
+		if (*stringStart != Assembler_Signs_Code_Table[STRING_SIGN] ||
+			*stringEnd != Assembler_Signs_Code_Table[STRING_SIGN])
 		{
 			log_error(ASSEMBLER_VALIDATOR ,STRING_DEFINE_ERR, string);
-			return 0;
+		}
+		else
+		{
+			ret_val = 1;
+			value[0] = STRING;
+			update_temp_line_value(INSTRUCTION, value);
+			update_temp_line_value(INSTRUCTION_DATA, string);
 		}
 
-		*endInstruction = stringEnd;
+		free(string);
+		*endInstruction += stringEnd - stringStart + 1;
 	}
 	else
 	{
 		log_error(ASSEMBLER_VALIDATOR, STRING_EMPTY_ERR, "" );
-		return 0;
 	}
 
-	return 1;
-
-	temp_save_value(INSTRUCTION, STRING, 0, 0);
-	temp_save_value(INSTRUCTION_DATA, 0, string, 0);
+	return ret_val;
 }
 
-int is_proper_command(char* commandStart ,char** commandEnd)
+// check if the command foramt is proper according to the assembler roles
+// input - 1. commandStart - 
+//         2. commandEnd a pointer to char pointer -  current position in the line processed 
+// return - int value 1 if seccuss, 0 if fails
+int is_proper_command(const char* commandStart ,char** commandEnd)
 {
-	char * command;
+	char * command, *slashPose;
 	struct command_data commandDefination;
-	int coammdnID, result = 0, i = 1;
 
+	int    coammdnID; 
+	int    i = 1;
+	int    commandLen = 0;	
+	int    value[1];
 
-	*commandEnd = get_sign_position(commandStart, *commandEnd, Assembler_Signs_Code_Table[SLASH_SIGN]);
+	int    ret_val = 0;
 
-	if (*commandEnd == NULL)
+	// this saves full command including slash
+	command		= create_word_by_pointers(commandStart, (*commandEnd));
+
+	// find slash loc
+
+	if (command)
 	{
-		log_error(ASSEMBLER_PROCESSOR ,UNVALID_COMMAND_FORMAT_ERR, "");
-		result = 0;
-	}
-	else
-	{
-		command = create_word_by_pointers(commandStart, (*commandEnd) - 1);
+		slashPose = strchr(command, Assembler_Signs_Code_Table[SLASH_SIGN]);
 
+		// if not exists - save inidcation to that - but still check the commend
+		// maybe its unknown sign
+		if (!slashPose)
+		{
+			commandLen =  strlen(command);
+		}
+		else
+		{
+			commandLen = slashPose - command;
+		}	
+
+		// free curr command 
+		free(command);		
+
+		// create it again for command only no slash
+		command   = create_word_by_pointers(commandStart, commandStart + commandLen - 1);
 		coammdnID = is_saved_word(command, Assembler_Command_Code_Table, COMMAND_NUMBER);
 
 		// if the word is not recognized
 		if (coammdnID == -1)
 		{
 			log_error(ASSEMBLER_PROCESSOR ,UNRECOGNIZE_SIGN_ERR, command);
-			result = 0;
+		}
+		// if the command exists - but missing slash
+		else if (!slashPose)
+		{
+			log_error(ASSEMBLER_PROCESSOR ,UNVALID_COMMAND_FORMAT_ERR, "");
 		}
 		// if is real command - we need to check if it fits the right format of the command
 		else
 		{
+			//move command end back to the end of the command name
+			*commandEnd -= *commandEnd - commandStart;
+			*commandEnd += commandLen;
+
 			// check command type and times
 			if(is_proper_type(commandEnd, 1))
 			{
-				 (*commandEnd)++;
+					(*commandEnd)++;
 
-				 if  (is_proper_times(commandEnd))
-				 {
-
+					// check if it proper time
+					if  (is_proper_times(commandEnd))
+					{
+					// find curr command id definition
 					commandDefination = Assembler_command_data_Code_Table[coammdnID];
 
 					(*commandEnd)++;
@@ -283,45 +405,52 @@ int is_proper_command(char* commandStart ,char** commandEnd)
 					if (!isspace(**commandEnd))
 					{
 						// log error
-						result = 0;
+						log_error(ASSEMBLER_VALIDATOR, UNRECOGNIZE_SIGN_ERR, *commandEnd);
 					}
 					else
 					{
-						// go to data
+						// move on to data
 						while (isspace(**commandEnd))
 						{
 							(*commandEnd)++;
 						}
 
+						// check according to command definition
 						switch (commandDefination.command_type)
 						{
+							// if twp
 							case TWO_OPERANDS:
 
-								result = is_proper_operand(commandEnd, commandDefination.sourceOperand, coammdnID, i);
+								// check one - if error - return error
+								ret_val = is_proper_operand(commandEnd, commandDefination.sourceOperand, coammdnID, i);
 
-								if (result == 0)
+								if (ret_val == 0)
 								{
 									break;
 								}
 								else
 								{
+									// if ok - move the curesor to next value
+									// droping to one operand and doing that code too
 									i++;
 									(*commandEnd)++;
+
 									while (**commandEnd == Assembler_Signs_Code_Table[COMMA_SIGN] ||
-										   isspace(**commandEnd))
+											isspace(**commandEnd))
 									{
 										(*commandEnd)++;
 									}
 									
 								}
-
+							// for one operand (and second of two operands)
 							case ONE_OPERAND:
 
-								result = is_proper_operand(commandEnd, commandDefination.DestOperand, coammdnID, i);
+								// check it
+								ret_val = is_proper_operand(commandEnd, commandDefination.DestOperand, coammdnID, i);
 								break;
 
 							case NO_OPERAND:
-								result = 1;
+								ret_val = 1;
 						}
 					}
 				}
@@ -329,245 +458,228 @@ int is_proper_command(char* commandStart ,char** commandEnd)
 		}
 	}
 
-	if (result == 1)
+	// free memory
+	free(command);
+
+	// if operands ok - save them
+	if (ret_val == 1)
 	{
-		temp_save_value(COMMAND, coammdnID, 0, 0);
+		value[0] = coammdnID;
+		update_temp_line_value(COMMAND, value);
 	}
 
-	return result;
+	return ret_val;
 }
 
+// check if the command type value is proper according to the assembler roles
+// input - 1. typeStart - a pointer to char pointer -  current position in the line processed 
+//         2. cntr - int indicating position in type (3 possible values)
+// return - int value 1 if seccuss, 0 if fails
 int is_proper_type(char** typeStart, int cntr)
 {
-	int result = 1;
+	int ret_val = 1;
+	int value;
 
+	// if first sign not / or not digit value
 	if (**typeStart != Assembler_Signs_Code_Table[SLASH_SIGN] ||
 		!isdigit((*typeStart)[1])
 	   )
 	{
 		log_error(ASSEMBLER_VALIDATOR ,TYPE_NOT_FOUND_ERR ,"" );
-		result = 0;
+		ret_val = 0;
 	}
 	// type found - check its validity
 	else 
 	{
 		(*typeStart)++;
 
+		// if type value is not in the possible range
 		if (**typeStart > TEN_BITS_CHAR || **typeStart < ALL_BITS_CHAR)
 		{
 			log_error(ASSEMBLER_VALIDATOR ,TYPE_UNVALID_ERR ,create_word_by_pointers(*typeStart, *typeStart + 1));
-			result = 0;
+			ret_val = 0;
 		}
 		else
 		{
-			temp_save_value(TYPE + cntr - 1, (int) *typeStart, 0 , 0);
+			value = **typeStart - '0';
+			
+			// if everything ok save the value , add cntre to save position in type
+			update_temp_line_value(TYPE + cntr - 1, &value);
 
 			// if its ten bits take the rest type definition
 			if ((**typeStart == TEN_BITS_CHAR || cntr > 1) && cntr < TYPE_NUMBER)
 			{
+				// recursivly check for next type (3 is max)
 				(*typeStart)++;
-				result = is_proper_type(typeStart, ++cntr);
+				ret_val = is_proper_type(typeStart, ++cntr);
 			}
 		}
 	}
 
-	return result;
+	return ret_val;
 }
 
+// check if the command timee value is proper according to the assembler roles
+// input - 1. timeStart - a pointer to char pointer -  current position in the line processed 
+// return - int value 1 if seccuss, 0 if fails
 int is_proper_times(char** time_start)
 {
+	int ret_val = 0;
+	
+	// if format doesnt fit to time value
 	if (**time_start != Assembler_Signs_Code_Table[COMMA_SIGN] ||
 		!isdigit((*time_start)[1])
 	   )
 	{
 		log_error(ASSEMBLER_VALIDATOR ,TIME_NOT_FOUND_ERR ,"");
-		return 0;
 	}
 	// times found - check its validity
 	else 
 	{
 		(*time_start)++;
 
+		// if time value is not in range
 		if (**time_start < ONE_TIMES_CHAR || **time_start > THREE_TIMES_CHAR)
 		{
 			log_error(ASSEMBLER_VALIDATOR ,TIME_UNVALID_ERR ,create_word_by_pointers(*time_start, *time_start + 1));
-			return 0;
-		}	
+		}
+		else
+		{
+			// if valid - save the value
+			update_temp_line_value(TIME,time_start);
+			ret_val = 1;
+		}
 	}
 		
-	temp_save_value(TIME, (int) *time_start, 0, 0);
-	return 1;
+	return ret_val;
 }
 
-int is_proper_operand(char** operandEnd, int* arrOperandTypes, int commandID, int operandNum)
+// check if the command type value is proper according to the assembler roles
+// input - 1. operandEnd - a pointer to char pointer -  current position in the line processed 
+//         2. arrOperandTypes - array of int idicating type od inputs operand can have for this command
+//		   3. commandID - int inidcating curr command
+//         4. operandNUm - int inidcating which operand is testd (first or second)
+// return - int value 1 if seccuss, 0 if fails
+int is_proper_operand(char** operandEnd, const int* arrOperandTypes, const int commandID, const int operandNum)
 {
-	int valueType = -1;
-
-	char* operandValue = (char*) malloc (sizeof(char) * MAXLINE);
+	int ret_val   = 0;
+	int valueType[1] = {-1};
+	
+	char* operandValue;
 	char* operandStart =  find_word_start(*operandEnd);
 
+	// if no value available
 	if (*operandStart == STRING_TERMINATOR)
 	{
 		log_error(ASSEMBLER_VALIDATOR ,UNVALID_OPERAND_NUM_ERR , "" );
-		return 0;
 	}
-
-	*operandEnd = operandStart;
-
-	// read until operand breaks with , or space
-	while (*((*operandEnd) + 1) != Assembler_Signs_Code_Table[COMMA_SIGN] &&
-		   !isspace(*(*operandEnd) + 1))
+	else
 	{
-		(*operandEnd)++;
-	}
+		// inc line pointer
+		*operandEnd +=  operandStart - *operandEnd;
 
-	operandValue = create_word_by_pointers(operandStart, *operandEnd);
+		// read until operand breaks with ',' or space
+		while (*((*operandEnd) + 1) != Assembler_Signs_Code_Table[COMMA_SIGN] &&
+			   !isspace(*(*operandEnd) + 1))
+		{
+			(*operandEnd)++;
+		}
 
-	// now check the operand by the operand definition array
-	if (is_proper_register_operand(operandValue))
-	{
-		if (arrOperandTypes[REGISTER_INPUT])
+		operandValue = create_word_by_pointers(operandStart, *operandEnd);
+
+		// now check the operand value match register operand
+		if (is_proper_register_operand(operandValue))
 		{
-			valueType = REGISTER_INPUT;
-		}
-		else
-		{
-			// log error
-			log_error(ASSEMBLER_VALIDATOR, REGISTER_INPUT_ERR, operandValue);
-			return 0;
-		}
+			// if this input is possible for command
+			if (arrOperandTypes[REGISTER_INPUT])
+			{
+				valueType[0] = REGISTER_INPUT;
+				ret_val = 1;
+			}
+			else
+			{
+				// log error
+				log_error(ASSEMBLER_VALIDATOR, REGISTER_INPUT_ERR, operandValue);
+			}
 		
-	}
-	else if (is_proper_immediate_operand(operandValue))
-	{
-		if (arrOperandTypes[IMMEDIATE_INPUT])
-		{
-			valueType = IMMEDIATE_INPUT;
 		}
+		// now check the operand value match immediate operand
+		else if (is_proper_immediate_operand(operandValue))
+		{
+			// if this input is possible for command
+			if (arrOperandTypes[IMMEDIATE_INPUT])
+			{
+				valueType[0] = IMMEDIATE_INPUT;
+				ret_val = 1;
+			}
+			else
+			{
+				// log error
+				log_error(ASSEMBLER_VALIDATOR, INDEX_INPUT_ERR, operandValue);
+			}
+		}
+		// now check the operand value match direct or index operand
+		else if (is_proper_direct_or_index_operand(operandValue, valueType))
+		{	
+			// if this input is possible for command
+			if (valueType[0] == DIRECT_INPUT)
+			{
+				if (arrOperandTypes[DIRECT_INPUT])
+				{
+					ret_val = 1;
+				}
+				else
+				{
+					// log error
+					log_error(ASSEMBLER_VALIDATOR, DIRECT_INPUT_ERR, operandValue);
+				}
+			} 
+			else
+			{
+				if (arrOperandTypes[INDEX_INPUT])
+				{
+					ret_val = 1;
+				}
+				else
+				{
+					// log error
+					log_error(ASSEMBLER_VALIDATOR, INDEX_INPUT_ERR, operandValue);
+				}
+			}
+		}
+		// nothing is good - error
 		else
 		{
 			// log error
-			log_error(ASSEMBLER_VALIDATOR, INDEX_INPUT_ERR, operandValue);
-			return 0;
+			log_error(ASSEMBLER_VALIDATOR, OPERAND_FORMAT_ERR, operandValue);
 		}
-	}
-	else if (is_proper_index_operand(operandValue))
-	{
-		if (arrOperandTypes[INDEX_INPUT])
+
+		if (ret_val == 1)
 		{
-			valueType = INDEX_INPUT;
+			// save data acoording to operand number
+			if (operandNum == 1)
+			{
+				update_temp_line_value(OPERAND_1_TYPE, valueType);
+				update_temp_line_value(OPERAND_1_DATA, operandValue);
+			}
+			else
+			{
+				update_temp_line_value(OPERAND_2_TYPE, valueType);
+				update_temp_line_value(OPERAND_2_DATA, operandValue);
+			}
 		}
-		else
-		{
-			// log error
-			log_error(ASSEMBLER_VALIDATOR, INDEX_INPUT_ERR, operandValue);
-			return 0;
-		}
-	}
-	else if (is_proper_direct_operand(operandValue))
-	{	
-		if (arrOperandTypes[DIRECT_INPUT])
-		{
-			valueType = DIRECT_INPUT;
-		}
-		else
-		{
-			// log error
-			log_error(ASSEMBLER_VALIDATOR, DIRECT_INPUT_ERR, operandValue);
-			return 0;
-		}
-	}
-	// nothing is good - error
-	else
-	{
-		// log error
-		log_error(ASSEMBLER_VALIDATOR, OPERAND_FORMAT_ERR, operandValue);
-		return 0;
+
+		// free memory;
+		free(operandValue);
 	}
 
-	// save data acoording to operand number
-	if (operandNum == 1)
-	{
-		temp_save_value(OPERAND_1_TYPE, valueType, 0, 0);
-		temp_save_value(OPERAND_1_DATA, 0, operandValue, 0);
-	}
-	else
-	{
-		temp_save_value(OPERAND_2_TYPE, valueType, 0, 0);
-		temp_save_value(OPERAND_2_DATA, 0, operandValue, 0);
-	}
-
-	return 1;
+	return ret_val;
 }
 
-int is_proper_direct_operand(char* operandValue)
-{	
-	// replace this with the data check
-
-	if (is_proper_lable_for_command(operandValue))
-	{
-		if(is_contain_saved_sign(operandValue, Assembler_Signs_Code_Table, SIGN_NUMBER) == -1)
-		{
-			return 0;
-		}
-		else
-		{
-			return 1;
-		}
-	}
-}
-
-int is_proper_index_operand(char* operandValue)
-{
-	int i = 0;
-
-	char* VarNameEnd = strchr(operandValue, Assembler_Signs_Code_Table[OPEN_OFFSET_SIGN]);
-
-	// if it doesn't contain offset sign at all
-	if (VarNameEnd == NULL)
-	{
-		return 0;
-	}
-	// if it contains - check the lable
-	else if (!is_proper_lable_for_command(create_word_by_pointers(operandValue, VarNameEnd - 1)))
-	{
-		return 0;
-	}
-	// next sign should be @
-	else if (VarNameEnd[1] != Assembler_Signs_Code_Table[OFFSET_INPUT_SIGN])
-	{
-		return 0;
-	}
-	else
-	{
-		VarNameEnd+= 2;
-
-		// count the num of digits in the offset
-		while(isdigit(VarNameEnd[i]))
-		{
-			i++;
-		}
-
-		// return 1 if there was digits and there is close ) and there is space after
-		return (i > 0 && VarNameEnd[i] == Assembler_Signs_Code_Table[CLOSE_OFFSET_SIGN] &&
-				VarNameEnd[i + 1] == STRING_TERMINATOR);
-	}
-}
-
-int is_proper_register_operand(char* operandValue)
-{	
-	// if the first sign is r and second is number between 0 to 7 and there is space afterward
-	if (*operandValue == Assembler_Signs_Code_Table[REGISTER_SIGN] &&
-		operandValue[1] >= R0_CHR && operandValue[1] <= R7_CHR )
-	{
-		// move the cursor forder
-		return 1;
-	}
-
-	return 0;
-}
-
-int is_proper_immediate_operand(char* operandValue)
+// check if the operand value is proper immediate operand according to the assembler roles
+// input - 1. operandValue - char* to the operand value
+// return - int value 1 if seccuss, 0 if fails
+int is_proper_immediate_operand(const char* operandValue)
 {
 	int i = 0;	
 
@@ -597,8 +709,94 @@ int is_proper_immediate_operand(char* operandValue)
 	return i > 0;
 }
 
-int is_proper_lable_for_command(char* lable)
+
+// check if the operand value is proper register operand according to the assembler roles
+// input - 1. operandValue - char* to the operand value
+// return - int value 1 if seccuss, 0 if fails
+int is_proper_register_operand(const char* operandValue)
+{	
+	int ret_val = 0;
+
+	// if the first sign is r and second is number between 0 to 7 and there is space afterward
+	if (*operandValue == REGISTER_SIGN &&
+		operandValue[1] >= R0_CHR && operandValue[1] <= R7_CHR )
+	{
+		// move the cursor forder
+		ret_val = 1;
+	}
+
+	return ret_val;
+}
+
+// check if the operand value is proper direct or index operand according to the assembler roles
+// input - 1. lable - char* to the operand value
+//         2. operandType = int* out paramter indicating the operand type found
+// return - int value 1 if seccuss, 0 if fails
+int is_proper_direct_or_index_operand(const char* operandValue, int* operandType)
+{
+	int i	    = 0;
+	int ret_val = 0;
+
+	char* lableValue;
+	char* VarNameEnd = strchr(operandValue, Assembler_Signs_Code_Table[OPEN_OFFSET_SIGN]);
+
+	*operandType = IMMEDIATE_INPUT;
+
+	// if it contain offset sign at all
+	if (VarNameEnd)
+	{
+		// the type should be index input
+		*operandType = INDEX_INPUT;
+
+		// get lable value without index input sign
+		lableValue = create_word_by_pointers(operandValue, VarNameEnd - 1);
+	}
+	// else just put all operand value
+	else
+	{
+		lableValue = operandValue;
+	}
+
+	//check the lable
+	ret_val = is_proper_lable_for_command(lableValue);
+	
+	// if lable is ok and its index input
+	if (ret_val == 1 && (*operandType == (int)INDEX_INPUT))
+	{
+		ret_val = 0;
+
+		// next sign should be @
+		if (VarNameEnd[1] == Assembler_Signs_Code_Table[OFFSET_INPUT_SIGN])
+		{
+			VarNameEnd+= 2;
+
+			// count the num of digits in the offset
+			while(isdigit(VarNameEnd[i]))
+			{
+				i++;
+			}
+
+			// return 1 if there was digits and there is close ) and there is space after
+			if (i > 0 && VarNameEnd[i] == Assembler_Signs_Code_Table[CLOSE_OFFSET_SIGN] &&
+				VarNameEnd[i + 1] == STRING_TERMINATOR)
+			{
+				ret_val = 1;
+			}
+		}
+
+		free(lableValue);
+	}
+
+	return ret_val;
+}
+
+// check if the operand value is proper lable as part of command operand according to the assembler roles
+// input - 1. lable - char* to the operand value
+// return - int value 1 if seccuss, 0 if fails
+int is_proper_lable_for_command(const char* lable)
 { 
+	int ret_val = 0;
+
 	// check first lable character alpa
 	if (isalpha(*lable))
 	{
@@ -610,15 +808,24 @@ int is_proper_lable_for_command(char* lable)
 		{
 			log_error(ASSEMBLER_VALIDATOR , LABLE_SAVED_WORD_ERR, lable);
 		}
-		// check lable len no more then 30
-		else if (strlen(lable)  <= MAXLABLE)
+		// make sure doesnt contain saved signs
+		else if(is_contain_saved_sign(lable, Assembler_Signs_Code_Table, SIGN_NUMBER) >= 0)
 		{
-			temp_save_value(LABLE, 0, lable, 0);
+			log_error(ASSEMBLER_VALIDATOR , LABLE_SAVED_SIGN_ERR, lable);
+		}
+		// check lable len no more then 30
+		else if (strlen(lable)  > MAXLABLE)
+		{
+			log_error(ASSEMBLER_VALIDATOR , LABLE_LEN_ERR, lable);
+		}
+		else
+		{
+			update_temp_line_value(LABLE, lable);
 
-			return 1;
+			ret_val = 1;
 		}
 	}
 
-	return 0;
+	return ret_val;
 }
 

@@ -62,17 +62,17 @@
   <ItemGroup>
     <ClCompile Include="AssemblerCompiler.c" />
     <ClCompile Include="assemblerGlobals.c" />
+    <ClCompile Include="AssemblerMain.c" />
     <ClCompile Include="AssemblerMemory.c" />
     <ClCompile Include="AssemblerParser.c" />
     <ClCompile Include="assemblerProcessor.c" />
     <ClCompile Include="AssemblerErrorHandler.c" />
     <ClCompile Include="assemblerValidator.c" />
     <ClCompile Include="AssemblerFileHandler.c" />
-    <ClCompile Include="main.c" />
-    <ClCompile Include="stack.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AssemblerCompiler.h" />
+    <ClInclude Include="AssemblerDictionaries.h" />
     <ClInclude Include="AssemblerFileHandler.h" />
     <ClInclude Include="assemblerGlobals.h" />
     <ClInclude Include="AssemblerMemory.h" />
@@ -80,7 +80,6 @@
     <ClInclude Include="AssemblerErrorHandler.h" />
     <ClInclude Include="AssemblerProcessor.h" />
     <ClInclude Include="assemblerValidator.h" />
-    <ClInclude Include="stack.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,3 +1,10 @@
+.data a
+.data 2 , +a,  6,  -4
+.data , 7
+.data , 
+.data 6, , 2
+.data 3, 1, 
+.entry mov
 .string "abc"
 .data
 .extern
@@ -7,12 +14,9 @@
 .entry top
 .entry
 .entry 5bon
-.entry mov
 
 .data 1,5,7
-.data a
 .data 1 , -120  , 6  , +3 , -2
-.data 2 , +a,  6,  -4
 
 .string abc
 .string     "a"b
@@ -23,4 +27,3 @@
 
 .  hh
 
-0x0037b1d4

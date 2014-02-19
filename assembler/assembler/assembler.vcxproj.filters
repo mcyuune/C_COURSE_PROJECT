@@ -15,12 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="stack.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="AssemblerCompiler.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -45,11 +39,11 @@
     <ClCompile Include="AssemblerFileHandler.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AssemblerMain.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="stack.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="AssemblerCompiler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -72,6 +66,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AssemblerProcessor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AssemblerDictionaries.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

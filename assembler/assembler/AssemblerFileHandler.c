@@ -4,9 +4,12 @@
 #include "AsssemblerFileHandler.h"
 #include "AssemblerErrorHandler.h"
 #include "AssemblerGlobals.h"
+#include "AssemblerDictionaries.h"
 
 char* CURR_FILE_NAME;
 
+// this function open curr file name
+// return: FILE* - returns open file pointer
 FILE* open_file()
 {
 	FILE* ft = fopen(CURR_FILE_NAME, "r");
@@ -14,21 +17,27 @@ FILE* open_file()
 	// TO DO WRITE error
 	if (ft == NULL)
 	{
-		log_error(ASSEMBLER_FILE_HANDLER, OPENING_FILE_ERR, NULL, 1);
+		log_error(ASSEMBLER_FILE_HANDLER, OPENING_FILE_ERR, NULL);
 	}
 
 	return ft;
 }
 
-int close_file(FILE* assemblerFile)
+// this function close the file 
+// input:  1. assemblerFile - FILE* - the file pointer
+void close_files(FILE* assemblerFile)
 {
 	if (fclose(assemblerFile) != 0)
 	{
-		log_error(ASSEMBLER_FILE_HANDLER, CLOSING_FILE_ERR, NULL, 1);
+		log_error(ASSEMBLER_FILE_HANDLER, CLOSING_FILE_ERR, NULL);
 	}
 }
 
-char* generate_file_name(char* fileName, int suffix_type)
+// this function generate full file name by adding suffix to the file name
+// input:  1. char* fileName - the file name,
+//         2. int suffixType - the wanted suffix
+// return: char* - full file name
+char* generate_file_name(const char* fileName, const int suffix_type)
 {
 	CURR_FILE_NAME = (char*) malloc( strlen(fileName) + 
 									 strlen(Assembler_file_prefix_Code_Table[suffix_type]) + 1);//+1 for the zero-terminator

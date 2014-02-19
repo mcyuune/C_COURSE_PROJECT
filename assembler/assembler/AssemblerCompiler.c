@@ -2,40 +2,40 @@
 #include <string.h>
 
 #include "AssemblerCompiler.h"
-#include "assemblerGlobals.h"
 #include "AssemblerErrorHandler.h"
+
+#include "assemblerGlobals.h"
+#include "AssemblerDictionaries.h"
+
+
 #include "AssemblerFileHandler.h"
 #include "AssemblerProcessor.h"
-#include "AssemblerMemory.h"
 
-
-int compile(char* fileName)
+// the main assembler procedure.
+// input : fileName - char* containing the file name to compiple
+void compile(char* fileName)
 {
 	FILE* file;
 
-	init_globals();
-	init_errors();
-	init_memory();
-
+	// create file name and log its start
 	generate_file_name(fileName, SOURCE_SUFFIX);
+	log_file_start();
 
 	// try to open curr file
 	file = open_file();
 
-	// if error accoured while opening the file
-	if (file == NULL)
+	// if file is good
+	if (file != NULL)
 	{
-		return -1;
-	}
-	// if the file is open
-	else
-	{
+		// process the file
 		process_first_pass(file);
 		process_second_pass(file);
 
 		// try to close the file
-		close_file(file);
+		close_files(file);
+
+		// save all result file
 	}
 
-	return 1;
+	log_file_end();	
 }

@@ -4,32 +4,37 @@
 
 #include "AssemblerProcessor.h"
 #include "assemblerGlobals.h"
+#include "AssemblerDictionaries.h"
 #include "AssemblerErrorHandler.h"
 #include "assemblerValidator.h"
 #include "AssemblerParser.h"
 #include "AssemblerMemory.h"
 
-int process_command_line(char*, char**);
-int process_instruction(char*, char**);
-int process_lable(char*, char**, char);
-int commit_lable();
 void process_line(char* line);
 
-
+// process the first pass of the file
+// input 1. file - FILE pointer to curr file
 void process_first_pass(FILE* file)
 {
 	char* line  = (char*) malloc(sizeof (char) * MAXLINE);
-
 	LINE_NUMBER = 0;
 
 	// read line after line from the file
 	while (fgets(line, MAXLINE, file))
 	{
 		LINE_NUMBER++;
+
+		// process the line
 		process_line(line);
 	}
+
+	// free memory
+	free(line);
 }
 
+
+// process the first pass of the file
+// input 1. file - FILE pointer to curr file
 void process_second_pass(FILE* file)
 {
 	/*
@@ -48,87 +53,97 @@ void process_second_pass(FILE* file)
 	*/
 }
 
+// Handle the processing of first pass lines.
+// input : 1. line : char pointer to the curr line
 void process_line(char* line)
 {
 	int lableResult = 1;
 	int operationResult = 0;
+	int lableExists = 0;
+	int operationExists = 0;
 
-	char* wordStart  = (char*) malloc(sizeof (char) * MAXLINE);
-	char* wordEnd    = (char*) malloc(sizeof (char) * MAXLINE);
+	char* word;
+	char* wordStart  = line;
+	char* wordEnd    = line;	
 
-	char* wordNextStart  = (char*) malloc(sizeof (char) * MAXLINE);
+	// init values for the line data in the memory
+	init_temp_line_space();
 
-	init_line_data();
+	// find the start of data in the line (not white spaces)
+	wordStart += mov_to_word_start(wordStart);
 
-	wordStart = find_word_start(line);
-
-	// if its not a comment line
+	// if the line is not a comment line
 	// and not empty line
-	if (*line != Assembler_Signs_Code_Table[COMMENT_SIGN] &&
-		*wordStart != STRING_TERMINATOR
-		)
+	if (*wordStart != STRING_TERMINATOR && *wordStart != Assembler_Signs_Code_Table[COMMENT_SIGN])
 	{
-		wordEnd = find_word_end(wordStart);
+		// find curr word end
+		wordEnd   += mov_to_word_end(wordStart, wordStart - wordEnd);
 
-		// if it lable
+		// if it lable (lable sign in end of word)
 		if (*wordEnd == Assembler_Signs_Code_Table[LABLE_SIGN])
 		{
-			lableResult = process_lable(wordStart, &wordEnd, line[0]);
+			// check validity
+			lableResult = is_proper_lable(wordStart, wordEnd, line[0], LABLE);
 
-			wordStart = find_word_start(wordEnd + 1);
-			wordEnd =   find_word_end(wordStart);
+			// move to next word
+			wordEnd += 1;
+			wordStart += wordEnd - wordStart;
+
+			lableExists = 1;
 		}
 
-		// if its instruction
-		if (*wordStart == Assembler_Signs_Code_Table[INSTRUCTION_SIGN])
+		// if lable result were ok - or no lable found
+		if (lableResult == 1)
 		{
-			operationResult = process_instruction(wordStart, &wordEnd);
-		}
-		// else check command if not end of line
-		else if (*wordStart != Assembler_Signs_Code_Table[STRING_TERMINATOR])
-		{
-			operationResult = process_command_line(wordStart,  &wordEnd);
-		}
+			// move forward
+			wordStart += mov_to_word_start(wordEnd);
+			wordEnd   += mov_to_word_end(wordStart, wordStart - wordEnd);
 
-		// if the operation succeded make
-		if (operationResult == 1 && lableResult == 1)
-		{
-			// if the word isnt pointing on string end
-			if (*wordEnd !=  STRING_TERMINATOR)
+			// if next word is instruction (dot sign in begining)
+			if (*wordStart == Assembler_Signs_Code_Table[INSTRUCTION_SIGN])
 			{
-				// check to see if there are extra lines
-				wordNextStart = find_word_start(wordEnd + 1);
+				// check instruction
+				operationResult = is_proper_instruction(wordStart, &wordEnd);
+				operationExists = 1;
+			}
+			// else if there are more values in line
+			else if (*wordStart != STRING_TERMINATOR)
+			{
+				// check command
+				operationResult = is_proper_command(wordStart, &wordEnd);
+				operationExists = 1;
+			}
 
-				// report extra word
-				if (*wordNextStart !=  STRING_TERMINATOR)
+			// if there was lable without any more values
+			if (operationExists == 0 && lableExists == 1)
+			{
+				log_error(ASSEMBLER_PROCESSOR, LABLE_ALONE_ERR, "");
+			}
+			// if the operation and the lable succeded 
+			else if (operationResult == 1)
+			{
+				// if the word end isnt pointing on string end
+				if (*wordEnd !=  STRING_TERMINATOR && *wordEnd !=  LINE_TERMINATOR)
 				{
-					log_error(ASSEMBLER_PROCESSOR ,UNRECOGNIZE_SIGN_ERR,create_word_by_pointers(wordStart, wordEnd));
-				}
-				// else line is great - save it
-				else
-				{
-					save_line();
+					// check to see if there are extra words
+					wordStart += (wordEnd - wordStart) + mov_to_word_start(wordEnd + 1);
+
+					// report extra word
+					if (*wordStart !=  STRING_TERMINATOR && 
+						*wordStart !=  LINE_TERMINATOR)
+					{
+						word = create_word_by_pointers(wordEnd, wordStart);
+						log_error(ASSEMBLER_PROCESSOR ,UNRECOGNIZE_SIGN_ERR,word);
+
+						free(word);
+					}
+					// else line is great - save it
+					else
+					{
+						save_line_to_memory();
+					}
 				}
 			}
 		}		
 	}
-}
-
-int process_lable(char* lableStart, char** lableEnd, char first)
-{
-	return is_proper_lable(lableStart, lableEnd, first);													
-}
-
-int process_instruction(char* instruction, char** instructionEnd)
-{
-	// if the instruction is valid
-	if (is_proper_instruction(instruction,instructionEnd) == 1)
-	{
-		// save it to memory
-	}
-}
-
-int process_command_line(char* command, char** commandEnd)
-{
-	is_proper_command(command, commandEnd);
 }
