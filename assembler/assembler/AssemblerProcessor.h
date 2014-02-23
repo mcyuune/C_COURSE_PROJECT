@@ -11,4 +11,5 @@ void process_first_pass(FILE* file);
 // input 1. file - FILE pointer to curr file
 void process_second_pass(FILE* file);
 
+void create_compiled_output();
 #endif

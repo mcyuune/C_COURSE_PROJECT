@@ -3,119 +3,205 @@
 #include "assemblerGlobals.h"
 #include "AssemblerDictionaries.h"
 #include "AssemblerMemory.h"
+#include "AssemblerMemoryStructs.h"
+#include "AssemblerFileHandler.h"
+#include "AssemblerParser.h"
 
-// define struct for word : word part 10 bits
-struct 
+SignTable firstSign;
+SignTable currSign;
+
+referenceTable firstReference;
+referenceTable currReference;
+
+void link_command_data(int val, int pose);
+void insert_new_sign(int address, int type);
+void insert_reference_address(char* reference);
+void link_command_data(unsigned int val, int pose);
+void duplicate_command(int counter);
+void link_operand_data(int operandNum, int* numOfWords);
+void save_instruction_data();
+void save_command_data();
+
+void insert_new_sign(int address, int type, char* sign)
 {
-	unsigned int Part : 10;
-} wordPart;
+	if (currSign)
+	{
+		currSign->next = (SignTable*) malloc(sizeof(SignTable));
+		currSign = currSign->next;
+	}
+	else
+	{
+		firstSign = malloc(sizeof(SignTable));
+		currSign = firstSign;
+	}
 
-// create type word - have 2 wordParts - 20 bits
-typedef struct wordPart word[2];
+	currSign->address = address;
+	currSign->lable = malloc(sizeof(char)* MAXLABLE);
+	strcpy(currSign->lable , sign);
+	currSign->type = type;
+}
 
-//
-struct addressTable
+void insert_reference_address(char* reference)
 {
-	char* lable;
-	word* address;
-};
+	if (currReference)
+	{
+		currReference->next = malloc(sizeof(referenceTable));
+		currReference = currReference->next;
+	}
+	else
+	{
+		firstReference =  malloc(sizeof(referenceTable));
+		currReference = firstReference;
+	}
 
-// define struct for all line possiblle parts
-struct lineData
+	currReference->lable = malloc(sizeof(char) * MAXLABLE); 
+	strcpy(currReference->lable , reference);
+	currReference->refereneAddress = IC;
+}
+
+void link_command_data(unsigned int val, int pose)
 {
-	char* lable;
+	val = val << pose;
 
-	int   command;
+	MemorySegment[IC].Value = MemorySegment[IC].Value | val;
+}
 
-	int   instruction;
-	char* instructionData;
-	int*  instructionInt;
-	char* instructionLable;
-
-	int   type;
-	int   type_val_1;
-	int   type_val_2;
-
-	int   time;
-
-	int   offset;
-	char* offsetLable;
-
-	int   operand1Type;
-	char* operand1;
-
-	int   operand2Type;
-	char* operand2;
-};
-
-struct lineData currLine;
-int IC;
-int DC;
-
-word* MemorySegment;
-word* DataSegment;
-
-// this function intalize temp line memory for new line
-void init_temp_line_space()
+void duplicate_command(int counter)
 {
-	currLine.lable = (char*) malloc(sizeof(char) * MAXLABLE);
-	currLine.lable[0] = Assembler_Signs_Code_Table[STRING_TERMINATOR];
+	while (counter > 0)
+	{
+		MemorySegment[IC].Value = MemorySegment[IC - counter].Value;
+		IC++;
+		counter--;
+	}
+}
 
-	currLine.offsetLable = (char*) malloc(sizeof(char) * MAXLABLE);
-	currLine.offsetLable[0] = Assembler_Signs_Code_Table[STRING_TERMINATOR];
+void link_operand_data(int operandNum, int* numOfWords)
+{
+	(*numOfWords)++;
+	IC++;
 
-	currLine.instructionData = (char*) malloc(sizeof(char) * MAXLINE);
-	currLine.instructionData[0] = Assembler_Signs_Code_Table[STRING_TERMINATOR];
+	// if its direct input
+	if (currLine.lineCommand.operands[operandNum].Type == IMMEDIATE_INPUT)
+	{
+		MemorySegment[IC].Value = (int) *currLine.lineCommand.operands[operandNum].Value;
+	}
+	// if it has lable reference
+	else
+	{
+		insert_reference_address(currLine.lineCommand.operands[operandNum].Value);		
 
-	currLine.operand1 = (char*) malloc(sizeof(char) * MAXLINE);
-	currLine.operand1[0] = Assembler_Signs_Code_Table[STRING_TERMINATOR];
+		// if there is offset
+		if (currLine.lineCommand.operands[operandNum].offset)
+		{
+			(*numOfWords)++;
+			IC++;
 
-	currLine.operand2 = (char*) malloc(sizeof(char) * MAXLINE);
-	currLine.operand2[0] = Assembler_Signs_Code_Table[STRING_TERMINATOR];
+			MemorySegment[IC].Value = currLine.lineCommand.operands[operandNum].offset;		
+		}
+	}
+}
 
-	currLine.instructionInt = (int*) malloc(sizeof(char) * MAXLINE);
-	currLine.instructionInt = 0;
+void save_instruction_data()
+{
+	int i;
+	switch(currLine.lineInstruction.instruction)
+	{
+		case DATA:
+			for (i=0; i <= currLine.lineInstruction.value_len; i++)
+			{
+				DataSegment[DC].Value = currLine.lineInstruction.dataValue[i];
+				DC++;
+			}
+			break;
 
-	currLine.command = -1;
-	currLine.type = -1;
-	currLine.type_val_1 = -1;
-	currLine.type_val_2 = -1;
-	currLine.time = -1;
-	currLine.offset = -1;
-	
+		case STRING:
+			for (i=0; i <= currLine.lineInstruction.value_len; i++)
+			{
+				DataSegment[DC].Value = currLine.lineInstruction.stringValue[i];
+				DC++;
+			}
+			break;
+		case ENTRY:
+			insert_new_sign(DC, R ,currLine.lineInstruction.lable);
+			break;
 
-	currLine.instruction = -1;
-	
-	currLine.operand1Type = -1;
+		case EXTERN:
+			insert_new_sign(DC, E ,currLine.lineInstruction.lable);
+			break;
+	}
+}
 
-	currLine.operand2Type = -1;
+void save_command_data()
+{
+	int i = IC;
+	int numOfWords = 1;
+	int operandNum = SOURCE_OPERAND;
+
+	//create the data
+	link_command_data(currLine.lineCommand.type, TYPE_POSE);
+	link_command_data(currLine.lineCommand.opcode, OPCODE_POSE);
+	link_command_data(currLine.lineCommand.operands[SOURCE_OPERAND].Type, SRC_INPUT_POSE);
+	link_command_data(currLine.lineCommand.operands[DEST_OPERAND].Type, DEST_INPUT_POSE);
+	link_command_data(currLine.lineCommand.comb_min, COMB_POSE_MIN);
+	link_command_data(currLine.lineCommand.comb_max, COMB_POSE_MAX);
+
+	MemoryType[IC] = A;
+
+	if (currLine.lineCommand.operands[SOURCE_OPERAND].Type == REGISTER_INPUT)
+	{
+		link_command_data(currLine.lineCommand.operands[SOURCE_OPERAND].offset, SRC_REGISTER_POSE);
+	}
+	else
+	{
+		link_operand_data(operandNum, &numOfWords);
+	}
+
+	operandNum = DEST_OPERAND;
+
+	if (currLine.lineCommand.operands[DEST_OPERAND].Type == REGISTER_INPUT)
+	{
+		link_command_data(currLine.lineCommand.operands[DEST_OPERAND].offset, DEST_REGISTER_POSE);
+	}
+	else
+	{
+		link_operand_data(operandNum, &numOfWords);
+	}
+
+	// add it to memory according to time value
+	while (IC - i < currLine.lineCommand.time)
+	{
+		// copy command in memory
+		duplicate_command(numOfWords);
+		IC++;
+	}
 }
 
 // this function saves curr tmp line data to the actually memory
 void save_line_to_memory()
-{
-	int i;
-
-	if (currLine.lable[0] != Assembler_Signs_Code_Table[STRING_TERMINATOR])
-	{
-		// save it to address table
-	}
+{	
+	int lableAddress;
 
 	// its command line - save it
-	if (currLine.command != -1)
+	if (currLine.lineCommand.opcode != EMPTY_COMMAND)
 	{
-		//create the data
-
-		// add it to memory according to time value
-		for (i = 0; i < currLine.time; i++)
-		{
-
-		}
+		lableAddress = IC;
+		save_command_data();
 	}
 	// else it was instruction line
-	else if (currLine.instruction != -1)
+	else if (currLine.lineInstruction.instruction != EMPTY_COMMAND)
 	{
-		// handlw the instruction by its type
+		lableAddress = DC;
+
+		// handle the instruction by its type
+		save_instruction_data();
+	}
+
+	// if there was lable
+	if (currLine.lineLable)
+	{
+		// save it to address table
+		insert_new_sign(lableAddress, A, currLine.lineLable);
 	}
 }
 
@@ -127,60 +213,87 @@ void update_temp_line_value(const int value_type, const void* value)
 	switch (value_type)
 	{
 		case LABLE:
-			currLine.lable = (char*) value;
+			currLine.lineLable = (char*) malloc(sizeof(char) * MAXLABLE);
+			strcpy(currLine.lineLable,  (char*)value);
 			break;
-		case OFFSET_DATA:
-			currLine.offsetLable = (char*) value;
+		case STRING_VALUE:
+			currLine.lineInstruction.stringValue = (char*) malloc(sizeof(char) * MAXLABLE);
+			strcpy(currLine.lineInstruction.stringValue,(char*) value);
 			break;
-		case INSTRUCTION_DATA:
-			currLine.instructionData = (char*) value;
+		case DATA_VALUE:
+			currLine.lineInstruction.dataValue = (int*) malloc(sizeof(int) * MAXLINE);
+			currLine.lineInstruction.dataValue = (int*) value;
+			break;
+		case SRC_VALUE:
+			currLine.lineCommand.operands[SOURCE_OPERAND].Value = (char*) malloc(sizeof(char) * MAXLABLE);
+			strcpy(currLine.lineCommand.operands[SOURCE_OPERAND].Value, (char*) value);
+			break;
+		case DEST_VALUE:
+			currLine.lineCommand.operands[DEST_OPERAND].Value = (char*) malloc(sizeof(char) * MAXLABLE);
+			strcpy(currLine.lineCommand.operands[DEST_OPERAND].Value, (char*) value);
 			break;
 		case INSTRUCTION_LABLE:
-			currLine.instructionLable = (char*) value;
+			currLine.lineInstruction.lable = (char*) malloc(sizeof(char) * MAXLABLE);
+			strcpy(currLine.lineInstruction.lable, (char*) value);
 			break;
-		case INSTRUCTION_INT:
-			currLine.instructionInt= (int*) value;
-			break;
-		case OPERAND_1_DATA:
-			currLine.operand1 = (char*) value;
-			break;
-		case OPERAND_2_DATA:
-			currLine.operand1 = (char*) value;
-			break;
-
 		case TYPE:
-			currLine.type = *((int*) value);
+			currLine.lineCommand.type = *((int*) value);
 			break;
 		case TIME:
-			currLine.time = *((int*) value);
+			currLine.lineCommand.time = *((int*) value);
 			break;
-		case TYPE_VAL_1:
-			currLine.type_val_1 = *((int*) value);
+		case COMB_MIN:
+			currLine.lineCommand.comb_min = *((int*) value);
 			break;
-		case TYPE_VAL_2:
-			currLine.type_val_2 = *((int*) value);
+		case COMB_MAX:
+			currLine.lineCommand.comb_max = *((int*) value);
 			break;
-		case COMMAND:
-			currLine.command = *((int*) value);
+		case OPCODE:
+			currLine.lineInstruction.instruction = EMPTY_COMMAND;
+			currLine.lineCommand.opcode = *((unsigned*) value);
 			break;
 		case INSTRUCTION:
-			currLine.instruction = *((int*) value);
+			currLine.lineCommand.opcode = EMPTY_COMMAND;
+			currLine.lineInstruction.instruction = *((int*) value);
 			break;
-		case OFFSET:
-			currLine.offset = *((int*) value);
+		case VALUE_LEN:
+			currLine.lineInstruction.value_len = *((int*) value);
+		case SRC_OFFSET:
+			currLine.lineCommand.operands[SOURCE_OPERAND].offset = *((int*) value);
 			break;
-		case OPERAND_1_TYPE:
-			currLine.operand1Type = *((int*) value);
+		case DEST_OFFSET:
+			currLine.lineCommand.operands[DEST_OPERAND].offset = *((int*) value);
 			break;
-		case OPERAND_2_TYPE:
-			currLine.operand2Type = *((int*) value);
+		case SRC_TYPE:
+			currLine.lineCommand.operands[SOURCE_OPERAND].Type = *((int*) value);
+			break;
+		case DEST_TYPE:
+			currLine.lineCommand.operands[DEST_OPERAND].Type = *((int*) value);
 			break;
 	}
 }
 
-// this function intalize the assembler memory for use
-void init_AssemblerMemory()
+void create_program_file()
 {
-	DataSegment = malloc (sizeof (word) * 80);
-	MemorySegment = malloc (sizeof (word) * 2000);
+	int i;
+
+	FILE* output = open_file(WRITE, generate_file_name(TARGET_SUFFIX));
+
+	write_to_file(PROGRAM_HEADER_OUTPUT_FORMAT, output, base6(IC), base6(DC), 0);
+	
+	for (i=0; i < IC; i++)
+	{
+		write_to_file(PROGRAM_BODY_OUTPUT_FORMAT, output, base6(i + MEMORY_START_ADDRESS), base6(MemorySegment[i].Value), base6(MemoryType[i]));
+	}
+
+	for (; i < IC + DC; i++)
+	{
+		write_to_file(PROGRAM_BODY_OUTPUT_FORMAT, output, base6(i + MEMORY_START_ADDRESS), base6(DataSegment[i].Value), 0);
+	}
+
+	close_files(output);
+}
+
+void create_params_files()
+{
 }

@@ -76,6 +76,7 @@
     <ClInclude Include="AssemblerFileHandler.h" />
     <ClInclude Include="assemblerGlobals.h" />
     <ClInclude Include="AssemblerMemory.h" />
+    <ClInclude Include="AssemblerMemoryStructs.h" />
     <ClInclude Include="AssemblerParser.h" />
     <ClInclude Include="AssemblerErrorHandler.h" />
     <ClInclude Include="AssemblerProcessor.h" />

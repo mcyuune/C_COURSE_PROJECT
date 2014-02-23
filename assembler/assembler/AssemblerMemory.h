@@ -2,24 +2,26 @@
 #define ASSEMBLER_MEMORY_H
 
 // a dictionary used for line possiblle data types
-enum DATA_TYPES
+enum LINE_TYPES
 {
 	LABLE,
-	COMMAND,
+	OPCODE,
 	INSTRUCTION,
-	INSTRUCTION_DATA,
-	INSTRUCTION_INT,
+	STRING_VALUE,
+	DATA_VALUE,
+	VALUE_LEN,
 	INSTRUCTION_LABLE,
 	TYPE, 
-	TYPE_VAL_1,
-	TYPE_VAL_2,
+	COMB_MIN,
+	COMB_MAX,
 	TIME,
 	OFFSET,
-	OFFSET_DATA,
-	OPERAND_1_TYPE,
-	OPERAND_1_DATA,
-	OPERAND_2_TYPE,
-	OPERAND_2_DATA
+	SRC_TYPE,
+	SRC_VALUE,
+	SRC_OFFSET,
+	DEST_TYPE,
+	DEST_VALUE,
+	DEST_OFFSET
 };
 
 // this function saves curr tmp line data to the actually memory
@@ -35,5 +37,8 @@ void update_temp_line_value(const int value_type, const void* value);
 
 // this function intalize the assembler memory for use
 void init_AssemblerMemory();
+
+void create_program_file();
+void create_params_files();
 
 #endif

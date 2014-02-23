@@ -4,7 +4,6 @@
 
 #include <string.h>
 
-
 // array index numbers
 #define COMMAND_NUMBER     16
 #define SIGN_NUMBER		   13
@@ -22,6 +21,9 @@
 #define LINE_TERMINATOR '\n'
 #define STRING_TERMINATOR '\0'
 #define REGISTER_SIGN 'r'
+
+#define READ          "r"
+#define WRITE         "w"
 
 // define the assembler models names
 #define ASSEMBLER_PARSER		"ASSEMBLER_PARSER"

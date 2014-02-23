@@ -7,14 +7,15 @@
 // input:  1. char* fileName - the file name,
 //         2. int suffixType - the wanted suffix
 // return: char* - full file name
-char* generate_file_name(const char* fileName, const int suffixType);
+char* generate_file_name(const int suffixType);
 
 // this function open curr file name
 // return: FILE* - returns open file pointer
-FILE* open_file();
+FILE* open_file(const char* fileMode, const char* fileName );
 
 // this function close the file 
 // input:  1. FILE* - the file pointer
 void close_files(FILE* file);
 
+void write_to_file(char* format, FILE* currFile, int num1, int num2, int num3);
 #endif

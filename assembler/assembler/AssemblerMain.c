@@ -2,7 +2,6 @@
 #include "AssemblerCompiler.h"
 #include "assemblerGlobals.h"
 #include "AssemblerErrorHandler.h"
-#include "AssemblerMemory.h"
 
 #include <stdio.h>
 
@@ -17,12 +16,11 @@ int main( int argc, char* argv[] )
 	//argv[1] = "firstPassMainLoppTest";
 	//argv[0] = "testInstruction";
 	//argv[0] = "commandTest";
-	argv[0] = "fullCommandTest";
+	argv[0] = "testFull";
 
 	// init all gloabals and directories 
 	init_AssemblerGlobals();
 	init_AssemblerErrorHandler();
-	init_AssemblerMemory();
 
 	// go over all send files
  	for (i=0; i < argc -1 ; i++ )

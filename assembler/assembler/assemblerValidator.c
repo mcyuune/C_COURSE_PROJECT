@@ -20,10 +20,9 @@ int is_proper_times(char** timeValue);
 int is_proper_type(char** typeValue, int cntr);
 
 // operand inner functions
-int is_proper_register_operand(const char* operandValue);
-int is_proper_direct_or_index_operand(const char*, int*);
-int is_proper_immediate_operand(const char* operandValue);
-
+int is_proper_register_operand(const char* operandValue, int* offset);
+int is_proper_direct_or_index_operand(char*, int*, int* offset);
+int is_proper_immediate_operand(char* operandValue);
 
 // check if the lable is proper according to the assembler roles
 // input - 1. lableStart char pointer to the lable start,
@@ -112,6 +111,8 @@ int is_proper_instruction(const char* instructionStart, char** InstructionEnd)
 {
 	int ret_val = 0;
 
+	int lableType;
+
 	char* lableStart;
 	char* instruction = create_word_by_pointers(instructionStart + 1, *InstructionEnd);
 
@@ -145,7 +146,6 @@ int is_proper_instruction(const char* instructionStart, char** InstructionEnd)
 			// increase the line pointer to the lable end
 			*InstructionEnd += mov_to_word_end(lableStart, lableStart - *InstructionEnd);
 
-			// check if the lable is valid
 			ret_val = is_proper_lable(lableStart, *InstructionEnd, lableStart[0], INSTRUCTION_LABLE);
 
 			//free memory 
@@ -272,7 +272,8 @@ int is_proper_data(char** endInstruction)
 		// save the instruction values
 		value[0] = DATA;
 		update_temp_line_value(INSTRUCTION, value);
-		update_temp_line_value(INSTRUCTION_DATA, numbers);
+		update_temp_line_value(DATA_VALUE, numbers);
+		update_temp_line_value(VALUE_LEN, &last_i);
 	}
 
 	return ret_val;
@@ -314,7 +315,8 @@ int is_proper_string(char** endInstruction)
 			ret_val = 1;
 			value[0] = STRING;
 			update_temp_line_value(INSTRUCTION, value);
-			update_temp_line_value(INSTRUCTION_DATA, string);
+			update_temp_line_value(STRING_VALUE, string);
+			update_temp_line_value(VALUE_LEN, (stringEnd - 1) - (stringStart + 1));
 		}
 
 		free(string);
@@ -465,7 +467,7 @@ int is_proper_command(const char* commandStart ,char** commandEnd)
 	if (ret_val == 1)
 	{
 		value[0] = coammdnID;
-		update_temp_line_value(COMMAND, value);
+		update_temp_line_value(OPCODE, value);
 	}
 
 	return ret_val;
@@ -525,7 +527,8 @@ int is_proper_type(char** typeStart, int cntr)
 int is_proper_times(char** time_start)
 {
 	int ret_val = 0;
-	
+	int value;
+
 	// if format doesnt fit to time value
 	if (**time_start != Assembler_Signs_Code_Table[COMMA_SIGN] ||
 		!isdigit((*time_start)[1])
@@ -546,7 +549,9 @@ int is_proper_times(char** time_start)
 		else
 		{
 			// if valid - save the value
-			update_temp_line_value(TIME,time_start);
+
+			value = **time_start - '0';
+			update_temp_line_value(TIME,&value);
 			ret_val = 1;
 		}
 	}
@@ -564,7 +569,8 @@ int is_proper_operand(char** operandEnd, const int* arrOperandTypes, const int c
 {
 	int ret_val   = 0;
 	int valueType[1] = {-1};
-	
+	int offset;
+
 	char* operandValue;
 	char* operandStart =  find_word_start(*operandEnd);
 
@@ -588,7 +594,7 @@ int is_proper_operand(char** operandEnd, const int* arrOperandTypes, const int c
 		operandValue = create_word_by_pointers(operandStart, *operandEnd);
 
 		// now check the operand value match register operand
-		if (is_proper_register_operand(operandValue))
+		if (is_proper_register_operand(operandValue, &offset))
 		{
 			// if this input is possible for command
 			if (arrOperandTypes[REGISTER_INPUT])
@@ -619,7 +625,7 @@ int is_proper_operand(char** operandEnd, const int* arrOperandTypes, const int c
 			}
 		}
 		// now check the operand value match direct or index operand
-		else if (is_proper_direct_or_index_operand(operandValue, valueType))
+		else if (is_proper_direct_or_index_operand(operandValue, valueType, &offset))
 		{	
 			// if this input is possible for command
 			if (valueType[0] == DIRECT_INPUT)
@@ -659,13 +665,15 @@ int is_proper_operand(char** operandEnd, const int* arrOperandTypes, const int c
 			// save data acoording to operand number
 			if (operandNum == 1)
 			{
-				update_temp_line_value(OPERAND_1_TYPE, valueType);
-				update_temp_line_value(OPERAND_1_DATA, operandValue);
+				update_temp_line_value(SRC_TYPE, valueType);
+				update_temp_line_value(SRC_OFFSET, &offset);
+				update_temp_line_value(SRC_VALUE, operandValue);
 			}
 			else
 			{
-				update_temp_line_value(OPERAND_2_TYPE, valueType);
-				update_temp_line_value(OPERAND_2_DATA, operandValue);
+				update_temp_line_value(DEST_TYPE, valueType);
+				update_temp_line_value(DEST_OFFSET, &offset);
+				update_temp_line_value(DEST_VALUE, operandValue);
 			}
 		}
 
@@ -679,9 +687,11 @@ int is_proper_operand(char** operandEnd, const int* arrOperandTypes, const int c
 // check if the operand value is proper immediate operand according to the assembler roles
 // input - 1. operandValue - char* to the operand value
 // return - int value 1 if seccuss, 0 if fails
-int is_proper_immediate_operand(const char* operandValue)
+int is_proper_immediate_operand(char* operandValue)
 {
 	int i = 0;	
+	int j;
+	char* numberValue;
 
 	if (operandValue[i] == Assembler_Signs_Code_Table[IMMEDIATE_INPUT_SIGN])
 	{
@@ -696,6 +706,8 @@ int is_proper_immediate_operand(const char* operandValue)
 		while(!isspace(operandValue[i]) &&
 			  operandValue[i] != Assembler_Signs_Code_Table[COMMA_SIGN])
 		{
+			j = i;
+
 			if (!isdigit(operandValue[i]))
 			{
 				i = 0;
@@ -704,6 +716,11 @@ int is_proper_immediate_operand(const char* operandValue)
 
 			i++;
 		}
+
+		numberValue = create_word_by_pointers(operandValue + j, operandValue + i -1);
+
+		strcpy(operandValue, numberValue);
+		free(numberValue);
 	}
 
 	return i > 0;
@@ -713,7 +730,7 @@ int is_proper_immediate_operand(const char* operandValue)
 // check if the operand value is proper register operand according to the assembler roles
 // input - 1. operandValue - char* to the operand value
 // return - int value 1 if seccuss, 0 if fails
-int is_proper_register_operand(const char* operandValue)
+int is_proper_register_operand(const char* operandValue, int* offset)
 {	
 	int ret_val = 0;
 
@@ -723,6 +740,7 @@ int is_proper_register_operand(const char* operandValue)
 	{
 		// move the cursor forder
 		ret_val = 1;
+		*offset = operandValue[1] - '0';
 	}
 
 	return ret_val;
@@ -732,7 +750,7 @@ int is_proper_register_operand(const char* operandValue)
 // input - 1. lable - char* to the operand value
 //         2. operandType = int* out paramter indicating the operand type found
 // return - int value 1 if seccuss, 0 if fails
-int is_proper_direct_or_index_operand(const char* operandValue, int* operandType)
+int is_proper_direct_or_index_operand(char* operandValue, int* operandType, int* offset)
 {
 	int i	    = 0;
 	int ret_val = 0;
@@ -761,7 +779,7 @@ int is_proper_direct_or_index_operand(const char* operandValue, int* operandType
 	ret_val = is_proper_lable_for_command(lableValue);
 	
 	// if lable is ok and its index input
-	if (ret_val == 1 && (*operandType == (int)INDEX_INPUT))
+	if (ret_val && (*operandType == (int)INDEX_INPUT))
 	{
 		ret_val = 0;
 
@@ -769,10 +787,12 @@ int is_proper_direct_or_index_operand(const char* operandValue, int* operandType
 		if (VarNameEnd[1] == Assembler_Signs_Code_Table[OFFSET_INPUT_SIGN])
 		{
 			VarNameEnd+= 2;
+			*offset = 0;
 
 			// count the num of digits in the offset
 			while(isdigit(VarNameEnd[i]))
 			{
+				*offset = *offset * 10 + (VarNameEnd[i] - '0');
 				i++;
 			}
 
@@ -781,9 +801,11 @@ int is_proper_direct_or_index_operand(const char* operandValue, int* operandType
 				VarNameEnd[i + 1] == STRING_TERMINATOR)
 			{
 				ret_val = 1;
+
+				strcpy(operandValue, lableValue);
 			}
 		}
-
+		
 		free(lableValue);
 	}
 
@@ -820,7 +842,7 @@ int is_proper_lable_for_command(const char* lable)
 		}
 		else
 		{
-			update_temp_line_value(LABLE, lable);
+			//update_temp_line_value(INSTRUCTION_LABLE, lable);
 
 			ret_val = 1;
 		}

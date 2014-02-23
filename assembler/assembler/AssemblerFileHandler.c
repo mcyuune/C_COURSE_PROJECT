@@ -10,9 +10,9 @@ char* CURR_FILE_NAME;
 
 // this function open curr file name
 // return: FILE* - returns open file pointer
-FILE* open_file()
+FILE* open_file(char* fileMode, char* fileName)
 {
-	FILE* ft = fopen(CURR_FILE_NAME, "r");
+	FILE* ft = fopen(fileName, fileMode);
 
 	// TO DO WRITE error
 	if (ft == NULL)
@@ -37,11 +37,19 @@ void close_files(FILE* assemblerFile)
 // input:  1. char* fileName - the file name,
 //         2. int suffixType - the wanted suffix
 // return: char* - full file name
-char* generate_file_name(const char* fileName, const int suffix_type)
+char* generate_file_name(const int suffix_type)
 {
-	CURR_FILE_NAME = (char*) malloc( strlen(fileName) + 
-									 strlen(Assembler_file_prefix_Code_Table[suffix_type]) + 1);//+1 for the zero-terminator
+	char* fullName = (char*) malloc(strlen(CURR_FILE_NAME) + 
+									strlen(Assembler_file_prefix_Code_Table[suffix_type]) + 1);//+1 for the zero-terminator
 
-	strcpy(CURR_FILE_NAME, fileName);
-	strcat(CURR_FILE_NAME, Assembler_file_prefix_Code_Table[suffix_type]);
+	strcpy(fullName, CURR_FILE_NAME);
+	strcat(fullName, Assembler_file_prefix_Code_Table[suffix_type]);
+
+	return fullName;
 }
+
+void write_to_file(char* format, FILE* currFile, int num1, int num2, int num3)
+{
+	fprintf(currFile, format, num1, num2, num3);
+}
+

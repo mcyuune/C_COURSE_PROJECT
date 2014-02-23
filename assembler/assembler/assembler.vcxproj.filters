@@ -71,5 +71,8 @@
     <ClInclude Include="AssemblerDictionaries.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="AssemblerMemoryStructs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

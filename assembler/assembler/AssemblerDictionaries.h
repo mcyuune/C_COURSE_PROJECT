@@ -3,13 +3,18 @@
 
 #include "assemblerGlobals.h"
 
-// a struct used to  define command - its id and possiblle operands
+struct operand_data
+{
+	int arrInputsType[4];
+};
+
 struct command_data
 {
 	int command_type;
 	int* sourceOperand;
 	int* DestOperand;
 };
+
 
 // a dictionary used for files prefix
 enum ASSEMBLER_FILE_PREFIX_DICTIONRAY {SOURCE_SUFFIX,

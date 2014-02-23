@@ -66,9 +66,6 @@ void process_line(char* line)
 	char* wordStart  = line;
 	char* wordEnd    = line;	
 
-	// init values for the line data in the memory
-	init_temp_line_space();
-
 	// find the start of data in the line (not white spaces)
 	wordStart += mov_to_word_start(wordStart);
 
@@ -136,14 +133,17 @@ void process_line(char* line)
 						log_error(ASSEMBLER_PROCESSOR ,UNRECOGNIZE_SIGN_ERR,word);
 
 						free(word);
-					}
-					// else line is great - save it
-					else
-					{
-						save_line_to_memory();
+						return;
 					}
 				}
+
+				save_line_to_memory();
 			}
 		}		
 	}
+}
+
+void create_compiled_output()
+{
+	create_program_file();
 }

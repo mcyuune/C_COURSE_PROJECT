@@ -42,7 +42,9 @@ int is_saved_word(const char* word, const char** arr, const int max);
 // returns: int - -1 if not found - positive number otherwise
 int is_contain_saved_sign(const char* string, const char* charList, const int max);
 
-char* make_6_base(const int);
+int base6(const int);
+
+
 
 
 #endif

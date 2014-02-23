@@ -136,3 +136,18 @@ int is_saved_word(const char* word, const char** arr, const int max)
 
 	return -1;
 }
+
+int base6(int value)
+{
+	int i = 1;
+	int result = 0;
+
+	while (value > 0)
+	{
+		result += (value % 6) * i;
+		value = value / 6;
+		i=i*10;
+	}
+
+	return result;
+}

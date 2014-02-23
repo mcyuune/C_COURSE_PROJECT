@@ -5,7 +5,7 @@
 void init_AssemblerGlobals()
 {
 	// intalizing all data code tables
-	struct command_data command;
+	struct command_data commandDefinition;
 
 	// command input variaty options
 	int arrAllInputTypes[INPUTS_NUMBER]		 = {1, 1, 1, 1};
@@ -68,62 +68,62 @@ void init_AssemblerGlobals()
 	Assembler_file_prefix_Code_Table[ENTERIES_SUFFIX] = ".ent";
 
 	// create type 1 command type
-	command.command_type = TWO_OPERANDS;
-	command.sourceOperand = arrAllInputTypes;
-	command.DestOperand = arrThreeLastnputTypes;
+	commandDefinition.command_type = TWO_OPERANDS;
+	commandDefinition.sourceOperand = arrAllInputTypes;
+	commandDefinition.DestOperand = arrThreeLastnputTypes;
 
 	// intalize matching command for this command type
-	Assembler_command_data_Code_Table[MOV] = command;
-	Assembler_command_data_Code_Table[ADD] = command;
-	Assembler_command_data_Code_Table[SUB] = command;
+	Assembler_command_data_Code_Table[MOV] = commandDefinition;
+	Assembler_command_data_Code_Table[ADD] = commandDefinition;
+	Assembler_command_data_Code_Table[SUB] = commandDefinition;
 	 
 	// create type 2 command type
-	command.command_type = TWO_OPERANDS;
-	command.sourceOperand = arrAllInputTypes;
-	command.DestOperand = arrAllInputTypes; 
+	commandDefinition.command_type = TWO_OPERANDS;
+	commandDefinition.sourceOperand = arrAllInputTypes;
+	commandDefinition.DestOperand = arrAllInputTypes; 
 	
 	// intalize matching command for this command type
-	Assembler_command_data_Code_Table[CMP] = command;
+	Assembler_command_data_Code_Table[CMP] = commandDefinition;
 
 	// create type 3 command type
-	command.command_type  = TWO_OPERANDS;
-	command.sourceOperand  = arrThreeLastnputTypes;
-	command.DestOperand = arrThreeLastnputTypes;  
+	commandDefinition.command_type  = TWO_OPERANDS;
+	commandDefinition.sourceOperand  = arrThreeLastnputTypes;
+	commandDefinition.DestOperand = arrThreeLastnputTypes;  
 	 
 	// intalize matching command for this command type
-	Assembler_command_data_Code_Table[LEA] = command;
+	Assembler_command_data_Code_Table[LEA] = commandDefinition;
 
 	// create type 4 command type
-	command.command_type  = ONE_OPERAND;
-	command.DestOperand = arrThreeLastnputTypes; 
+	commandDefinition.command_type  = ONE_OPERAND;
+	commandDefinition.DestOperand = arrThreeLastnputTypes; 
 	
 	// intalize matching command for this command type
-	Assembler_command_data_Code_Table[NOT] = command;
-	Assembler_command_data_Code_Table[CLR] = command;
-	Assembler_command_data_Code_Table[INC] = command;
-	Assembler_command_data_Code_Table[DEC] = command;
-	Assembler_command_data_Code_Table[JMP] = command;
-	Assembler_command_data_Code_Table[BNE] = command;
-	Assembler_command_data_Code_Table[RED] = command;
+	Assembler_command_data_Code_Table[NOT] = commandDefinition;
+	Assembler_command_data_Code_Table[CLR] = commandDefinition;
+	Assembler_command_data_Code_Table[INC] = commandDefinition;
+	Assembler_command_data_Code_Table[DEC] = commandDefinition;
+	Assembler_command_data_Code_Table[JMP] = commandDefinition;
+	Assembler_command_data_Code_Table[BNE] = commandDefinition;
+	Assembler_command_data_Code_Table[RED] = commandDefinition;
 	 
 	// create type 5 command type
-	command.command_type = ONE_OPERAND;
-	command.DestOperand  = arrAllInputTypes;
+	commandDefinition.command_type = ONE_OPERAND;
+	commandDefinition.DestOperand  = arrAllInputTypes;
 	 
 	// intalize matching command for this command type
-	Assembler_command_data_Code_Table[PRN] = command;
+	Assembler_command_data_Code_Table[PRN] = commandDefinition;
 
 	// create type 6 command type
-	command.command_type = ONE_OPERAND;
-	command.DestOperand  = arrFirstInputTypes;
+	commandDefinition.command_type = ONE_OPERAND;
+	commandDefinition.DestOperand  = arrFirstInputTypes;
 	 
 	// intalize matching command for this command type
-	Assembler_command_data_Code_Table[JSR] = command;
+	Assembler_command_data_Code_Table[JSR] = commandDefinition;
 
 	// create type 7 command type
-	command.command_type = NO_OPERAND;
+	commandDefinition.command_type = NO_OPERAND;
 	 
 	// intalize matching command for this command type
-	Assembler_command_data_Code_Table[RTS] = command;
-	Assembler_command_data_Code_Table[STP] = command;
+	Assembler_command_data_Code_Table[RTS] = commandDefinition;
+	Assembler_command_data_Code_Table[STP] = commandDefinition;
 }
