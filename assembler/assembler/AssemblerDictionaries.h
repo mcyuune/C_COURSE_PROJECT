@@ -16,6 +16,12 @@ struct command_data
 };
 
 
+enum OUTPUT_FORMAT_DICTIONRAY{PROGRAM_HEADER_OUTPUT_FORMAT,
+							  PROGRAM_BODY_OUTPUT_FORMAT,
+							  PROGRAM_SIGN_OUTPUT_FORMAT,
+							  EXTERN_FILE_OUTPUT_FORMAT,
+							  ENTRY_FILE_OUTPUT_FORMAT};
+
 // a dictionary used for files prefix
 enum ASSEMBLER_FILE_PREFIX_DICTIONRAY {SOURCE_SUFFIX,
 									   TARGET_SUFFIX,
@@ -163,6 +169,9 @@ char* Assembler_file_prefix_Code_Table[PREFIX_NUMBER];
 
 // register code table
 char* Assembler_registers_Code_Table[REGISTERS_NUMBER]; 
+
+// output foramt code table
+char* Assembler_output_format_Code_Table[OUTPUT_NUMBER]; 
 
 // command code table
 char* Assembler_Command_Code_Table[COMMAND_NUMBER]; 

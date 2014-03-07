@@ -126,4 +126,11 @@ void init_AssemblerGlobals()
 	// intalize matching command for this command type
 	Assembler_command_data_Code_Table[RTS] = commandDefinition;
 	Assembler_command_data_Code_Table[STP] = commandDefinition;
+
+	// intalize the output format
+	Assembler_output_format_Code_Table[PROGRAM_HEADER_OUTPUT_FORMAT] = "\t\t\t\t\t %8d\t  %8d\n";
+	Assembler_output_format_Code_Table[PROGRAM_BODY_OUTPUT_FORMAT]   = "\t\t%8d\t\t\t%8d\t\t\t%c\n";
+	Assembler_output_format_Code_Table[PROGRAM_SIGN_OUTPUT_FORMAT]   = "\t\t%8d\t\t\t%8d\n";
+	Assembler_output_format_Code_Table[ENTRY_FILE_OUTPUT_FORMAT]     = "\t\t%30s\t\t\t%8d\n";
+	Assembler_output_format_Code_Table[EXTERN_FILE_OUTPUT_FORMAT]    = "\t\t%30s\t\t\t%8d\n";
 }

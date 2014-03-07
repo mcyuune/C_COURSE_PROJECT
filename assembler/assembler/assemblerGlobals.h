@@ -12,18 +12,19 @@
 #define INSTRUCTION_NUMBER 4
 #define INPUTS_NUMBER      4
 #define TYPE_NUMBER        3
+#define OUTPUT_NUMBER      4
 
 // Values max length
 #define MAXLINE  80
 #define MAXLABLE 30
 
 // common use string terminators
-#define LINE_TERMINATOR '\n'
+#define LINE_TERMINATOR   '\n'
 #define STRING_TERMINATOR '\0'
-#define REGISTER_SIGN 'r'
+#define REGISTER_SIGN	  'r'
 
-#define READ          "r"
-#define WRITE         "w"
+#define READ              "r"
+#define WRITE             "w"
 
 // define the assembler models names
 #define ASSEMBLER_PARSER		"ASSEMBLER_PARSER"

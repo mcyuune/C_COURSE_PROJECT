@@ -48,8 +48,41 @@ char* generate_file_name(const int suffix_type)
 	return fullName;
 }
 
-void write_to_file(char* format, FILE* currFile, int num1, int num2, int num3)
+void write_to_file(int format, FILE* currFile, int address, void* value, 
+				   char commandType, int commandCtr, int signCtr)
 {
-	fprintf(currFile, format, num1, num2, num3);
+	switch (format)
+	{
+		case PROGRAM_HEADER_OUTPUT_FORMAT:
+		{
+			fprintf(currFile, Assembler_output_format_Code_Table[format], commandCtr, signCtr);
+			break;
+		}
+		case PROGRAM_BODY_OUTPUT_FORMAT:
+		{
+			fprintf(currFile, Assembler_output_format_Code_Table[format], address, 
+				(int) *((int*) value), commandType);
+			break;
+		}
+		case PROGRAM_SIGN_OUTPUT_FORMAT:
+		{
+			fprintf(currFile, Assembler_output_format_Code_Table[format], address, 
+				(int) *((int*) value));
+			break;
+		}
+		case ENTRY_FILE_OUTPUT_FORMAT:
+		{
+			fprintf(currFile, Assembler_output_format_Code_Table[format], 
+				((char*) value), address); 
+				;
+			break;
+		}
+		case EXTERN_FILE_OUTPUT_FORMAT:
+		{
+			fprintf(currFile, Assembler_output_format_Code_Table[format], 
+				((char*) value), address); 
+				;
+			break;
+		}
+	}
 }
-

@@ -37,20 +37,7 @@ void process_first_pass(FILE* file)
 // input 1. file - FILE pointer to curr file
 void process_second_pass(FILE* file)
 {
-	/*
-	char* newline;
-
-	while (fgets(newline, MAXLINE, file))
-	{
-		// process the file first pass
-		// find : its lable.
-		// find . something check data
-		// other its command
-		// for / it means the type bulshit
-		// , seperate operands
-
-	}
-	*/
+	complete_sign_references();
 }
 
 // Handle the processing of first pass lines.

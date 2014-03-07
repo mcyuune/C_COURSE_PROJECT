@@ -22,7 +22,7 @@ int is_proper_type(char** typeValue, int cntr);
 // operand inner functions
 int is_proper_register_operand(const char* operandValue, int* offset);
 int is_proper_direct_or_index_operand(char*, int*, int* offset);
-int is_proper_immediate_operand(char* operandValue);
+int is_proper_immediate_operand(char* operandValue, int* numResult);
 
 // check if the lable is proper according to the assembler roles
 // input - 1. lableStart char pointer to the lable start,
@@ -57,7 +57,7 @@ int is_proper_lable(const char* lableStart, const char* lableEnd, const char fir
 		}
 
 		// check first character not empty or if there is only :
-		if (isspace(firstLine) || lableEnd - lableStart == 0)
+		if (isspace(firstLine) || lableEnd - lableStart + 1 == 0)
 		{
 			log_error(ASSEMBLER_VALIDATOR ,LABLE_EMPTY_FIRST_VALUE_ERR, lable);
 		}
@@ -112,7 +112,7 @@ int is_proper_instruction(const char* instructionStart, char** InstructionEnd)
 	int ret_val = 0;
 
 	int lableType;
-
+	int   instructionType;
 	char* lableStart;
 	char* instruction = create_word_by_pointers(instructionStart + 1, *InstructionEnd);
 
@@ -148,6 +148,13 @@ int is_proper_instruction(const char* instructionStart, char** InstructionEnd)
 
 			ret_val = is_proper_lable(lableStart, *InstructionEnd, lableStart[0], INSTRUCTION_LABLE);
 
+			if (ret_val)
+			{
+				instructionType = (strcmp(instruction, Assembler_instruction_Code_Table[EXTERN]) == 0) ?
+									EXTERN: ENTRY;	
+				update_temp_line_value(INSTRUCTION, &instructionType);
+			}
+
 			//free memory 
 			free(instruction);
 		}
@@ -158,6 +165,7 @@ int is_proper_instruction(const char* instructionStart, char** InstructionEnd)
 		}
 	}
 
+	
 	return ret_val;
 }
 
@@ -286,6 +294,7 @@ int is_proper_string(char** endInstruction)
 {
 	int ret_val = 0;
 	int value[1];
+	int len;
 	char* string;
 
 	// find next word start
@@ -301,9 +310,6 @@ int is_proper_string(char** endInstruction)
 		// find word end
 		stringEnd += mov_to_word_end(stringStart, stringStart - stringEnd);
 
-		// create the string
-		string = create_word_by_pointers(stringStart, stringEnd);
-
 		// if string value not in " "
 		if (*stringStart != Assembler_Signs_Code_Table[STRING_SIGN] ||
 			*stringEnd != Assembler_Signs_Code_Table[STRING_SIGN])
@@ -312,11 +318,15 @@ int is_proper_string(char** endInstruction)
 		}
 		else
 		{
+			// create the string
+			string = create_word_by_pointers(stringStart + 1, stringEnd - 1);
+
 			ret_val = 1;
 			value[0] = STRING;
+			len = (stringEnd - 1) - (stringStart + 1);
 			update_temp_line_value(INSTRUCTION, value);
 			update_temp_line_value(STRING_VALUE, string);
-			update_temp_line_value(VALUE_LEN, (stringEnd - 1) - (stringStart + 1));
+			update_temp_line_value(VALUE_LEN, &len);
 		}
 
 		free(string);
@@ -393,11 +403,11 @@ int is_proper_command(const char* commandStart ,char** commandEnd)
 			// check command type and times
 			if(is_proper_type(commandEnd, 1))
 			{
-					(*commandEnd)++;
+				(*commandEnd)++;
 
-					// check if it proper time
-					if  (is_proper_times(commandEnd))
-					{
+				// check if it proper time
+				if  (is_proper_times(commandEnd))
+				{
 					// find curr command id definition
 					commandDefination = Assembler_command_data_Code_Table[coammdnID];
 
@@ -424,7 +434,7 @@ int is_proper_command(const char* commandStart ,char** commandEnd)
 							case TWO_OPERANDS:
 
 								// check one - if error - return error
-								ret_val = is_proper_operand(commandEnd, commandDefination.sourceOperand, coammdnID, i);
+								ret_val = is_proper_operand(commandEnd, commandDefination.sourceOperand, coammdnID, 1);
 
 								if (ret_val == 0)
 								{
@@ -434,7 +444,6 @@ int is_proper_command(const char* commandStart ,char** commandEnd)
 								{
 									// if ok - move the curesor to next value
 									// droping to one operand and doing that code too
-									i++;
 									(*commandEnd)++;
 
 									while (**commandEnd == Assembler_Signs_Code_Table[COMMA_SIGN] ||
@@ -448,7 +457,7 @@ int is_proper_command(const char* commandStart ,char** commandEnd)
 							case ONE_OPERAND:
 
 								// check it
-								ret_val = is_proper_operand(commandEnd, commandDefination.DestOperand, coammdnID, i);
+								ret_val = is_proper_operand(commandEnd, commandDefination.DestOperand, coammdnID, 2);
 								break;
 
 							case NO_OPERAND:
@@ -467,7 +476,9 @@ int is_proper_command(const char* commandStart ,char** commandEnd)
 	if (ret_val == 1)
 	{
 		value[0] = coammdnID;
+		i = commandDefination.command_type;
 		update_temp_line_value(OPCODE, value);
+		update_temp_line_value(OP_NUM, &i);
 	}
 
 	return ret_val;
@@ -570,7 +581,8 @@ int is_proper_operand(char** operandEnd, const int* arrOperandTypes, const int c
 	int ret_val   = 0;
 	int valueType[1] = {-1};
 	int offset;
-
+	int numResul = 0;
+	
 	char* operandValue;
 	char* operandStart =  find_word_start(*operandEnd);
 
@@ -586,7 +598,7 @@ int is_proper_operand(char** operandEnd, const int* arrOperandTypes, const int c
 
 		// read until operand breaks with ',' or space
 		while (*((*operandEnd) + 1) != Assembler_Signs_Code_Table[COMMA_SIGN] &&
-			   !isspace(*(*operandEnd) + 1))
+			   !isspace(*((*operandEnd) + 1)))
 		{
 			(*operandEnd)++;
 		}
@@ -610,7 +622,7 @@ int is_proper_operand(char** operandEnd, const int* arrOperandTypes, const int c
 		
 		}
 		// now check the operand value match immediate operand
-		else if (is_proper_immediate_operand(operandValue))
+		else if (is_proper_immediate_operand(operandValue, &numResul))
 		{
 			// if this input is possible for command
 			if (arrOperandTypes[IMMEDIATE_INPUT])
@@ -668,12 +680,14 @@ int is_proper_operand(char** operandEnd, const int* arrOperandTypes, const int c
 				update_temp_line_value(SRC_TYPE, valueType);
 				update_temp_line_value(SRC_OFFSET, &offset);
 				update_temp_line_value(SRC_VALUE, operandValue);
+				update_temp_line_value(SOURCE_IMMEDIATE_VALUE, &numResul);
 			}
-			else
+			else if (operandNum == 2)
 			{
 				update_temp_line_value(DEST_TYPE, valueType);
 				update_temp_line_value(DEST_OFFSET, &offset);
 				update_temp_line_value(DEST_VALUE, operandValue);
+				update_temp_line_value(DEST_IMMEDIATE_VALUE, &numResul);
 			}
 		}
 
@@ -687,10 +701,11 @@ int is_proper_operand(char** operandEnd, const int* arrOperandTypes, const int c
 // check if the operand value is proper immediate operand according to the assembler roles
 // input - 1. operandValue - char* to the operand value
 // return - int value 1 if seccuss, 0 if fails
-int is_proper_immediate_operand(char* operandValue)
+int is_proper_immediate_operand(char* operandValue, int* numResult)
 {
 	int i = 0;	
 	int j;
+	int sign;
 	char* numberValue;
 
 	if (operandValue[i] == Assembler_Signs_Code_Table[IMMEDIATE_INPUT_SIGN])
@@ -700,11 +715,12 @@ int is_proper_immediate_operand(char* operandValue)
 		if (operandValue[i] == Assembler_Signs_Code_Table[MINUS_SIGN] ||
 			operandValue[i] == Assembler_Signs_Code_Table[PLUS_SIGN])
 		{
+			sign = (operandValue[i] == Assembler_Signs_Code_Table[MINUS_SIGN]) ? -1 : 1;
 			i++;
 		}
 
 		while(!isspace(operandValue[i]) &&
-			  operandValue[i] != Assembler_Signs_Code_Table[COMMA_SIGN])
+			  operandValue[i] != STRING_TERMINATOR)
 		{
 			j = i;
 
@@ -714,13 +730,20 @@ int is_proper_immediate_operand(char* operandValue)
 				break;
 			}
 
+			*numResult = (*numResult * 10) + (operandValue[i] - '0');
+
 			i++;
 		}
 
-		numberValue = create_word_by_pointers(operandValue + j, operandValue + i -1);
+		if (i > 0 )
+		{
+			numberValue = create_word_by_pointers(operandValue + j, operandValue + i -1);
 
-		strcpy(operandValue, numberValue);
-		free(numberValue);
+			strcpy(operandValue, numberValue);
+			free(numberValue);
+
+			*numResult *= sign;
+		}
 	}
 
 	return i > 0;
@@ -758,7 +781,7 @@ int is_proper_direct_or_index_operand(char* operandValue, int* operandType, int*
 	char* lableValue;
 	char* VarNameEnd = strchr(operandValue, Assembler_Signs_Code_Table[OPEN_OFFSET_SIGN]);
 
-	*operandType = IMMEDIATE_INPUT;
+	*operandType = DIRECT_INPUT;
 
 	// if it contain offset sign at all
 	if (VarNameEnd)
@@ -797,8 +820,7 @@ int is_proper_direct_or_index_operand(char* operandValue, int* operandType, int*
 			}
 
 			// return 1 if there was digits and there is close ) and there is space after
-			if (i > 0 && VarNameEnd[i] == Assembler_Signs_Code_Table[CLOSE_OFFSET_SIGN] &&
-				VarNameEnd[i + 1] == STRING_TERMINATOR)
+			if (i > 0 && VarNameEnd[i] == Assembler_Signs_Code_Table[CLOSE_OFFSET_SIGN])
 			{
 				ret_val = 1;
 

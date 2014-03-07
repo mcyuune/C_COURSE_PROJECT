@@ -41,7 +41,7 @@ void init_AssemblerErrorHandler()
 	Assembler_Error_Code_Table[INDEX_INPUT_ERR]             = "operand cant be index input for this command";
 	Assembler_Error_Code_Table[IMMEDIATE_INPUT_ERR]         = "operand cant be immediate input for this command";
 
-	Assembler_Error_Code_Table[TYPE_NOT_FOUND_ERR]          = "command type not found in command";
+	Assembler_Error_Code_Table[TYPE_NOT_FOUND_ERR]          = "command type value not found in command";
 	Assembler_Error_Code_Table[TYPE_UNVALID_ERR]            = "command type value unvalid. type can be 0 or 1";
 	Assembler_Error_Code_Table[TIME_NOT_FOUND_ERR]          = "command preform times not found in command";
 	Assembler_Error_Code_Table[TIME_UNVALID_ERR]            = "command preform times value unvalid. times can be 0 - 3";

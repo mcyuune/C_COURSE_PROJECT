@@ -4,19 +4,16 @@
 #define MEMORY_SIZE 2000
 #define DATA_SIZE   100
 #define EMPTY_COMMAND 99
-#define SOURCE_OPERAND 0
-#define DEST_OPERAND   1
+#define DEST_OPERAND 0
+#define SOURCE_OPERAND   1
 #define MEMORY_START_ADDRESS 100
-
-#define PROGRAM_HEADER_OUTPUT_FORMAT "\t\t\t\t%5d\t%5d\n"
-#define PROGRAM_BODY_OUTPUT_FORMAT   "%5d\t%5d\t%5d\n"
 
 // a dictionary used for lable types
 enum COMMAND_TYPES
 {
-	A,
-	R,
-	E
+	A = 'A',
+	R = 'R',
+	E = 'E'
 };
 
 enum COMMAND_PARTS
@@ -47,7 +44,7 @@ struct SignValue
 {
 	char*  lable;
 	int    address;
-	int    type;
+	int    type;	
 	struct SignValue* next;
 };
 
@@ -57,6 +54,9 @@ struct referencedSign
 {
 	char*  lable;
 	int    refereneAddress;
+	int	   times;
+	int    dupVal;
+	int    offset;
 	struct referenedSign* next;
 };
 
@@ -64,6 +64,7 @@ struct operand
 {
 	unsigned int Type;
 	char*		 Value;
+	unsigned int NumValue;
 	int          offset;
 };
 
@@ -73,6 +74,7 @@ struct commandParts
 	unsigned int type;
 	unsigned int comb_min;
 	unsigned int comb_max;
+	unsigned int opernad_num;
 
 	unsigned int time;
 

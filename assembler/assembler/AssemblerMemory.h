@@ -12,9 +12,12 @@ enum LINE_TYPES
 	VALUE_LEN,
 	INSTRUCTION_LABLE,
 	TYPE, 
-	COMB_MIN,
 	COMB_MAX,
+	COMB_MIN,
+	DEST_IMMEDIATE_VALUE,
+	SOURCE_IMMEDIATE_VALUE,
 	TIME,
+	OP_NUM,
 	OFFSET,
 	SRC_TYPE,
 	SRC_VALUE,
@@ -34,6 +37,8 @@ void init_temp_line_space();
 // input:   1. value_type - enum for the line type value to save
 //          2. value - void* pointer to the value
 void update_temp_line_value(const int value_type, const void* value);
+
+void complete_sign_references();
 
 // this function intalize the assembler memory for use
 void init_AssemblerMemory();

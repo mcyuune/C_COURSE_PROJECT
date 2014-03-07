@@ -17,5 +17,6 @@ FILE* open_file(const char* fileMode, const char* fileName );
 // input:  1. FILE* - the file pointer
 void close_files(FILE* file);
 
-void write_to_file(char* format, FILE* currFile, int num1, int num2, int num3);
+void write_to_file(int format, FILE* currFile, int address, void* value, 
+				   char commandType, int commandCtr, int signCtr);
 #endif
