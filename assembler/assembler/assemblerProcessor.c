@@ -19,6 +19,9 @@ void process_first_pass(FILE* file)
 	char* line  = (char*) malloc(sizeof (char) * MAXLINE);
 	LINE_NUMBER = 0;
 
+	// init the memory
+	init_memory_for_new_file();
+
 	// read line after line from the file
 	while (fgets(line, MAXLINE, file))
 	{
@@ -130,7 +133,11 @@ void process_line(char* line)
 	}
 }
 
+// function create the compiples output files
 void create_compiled_output()
 {
+	// calling memory to output the data
 	create_program_file();
+
+	create_params_files();
 }

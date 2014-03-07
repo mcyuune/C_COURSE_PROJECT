@@ -1,3 +1,9 @@
+// this header defines  the assembler error handler. 
+// it handles all login of errors
+
+// writen by:     Ma'ayan cohen
+// last modified: 7.3.2014
+
 #ifndef ASSEMBLER_ERROR_HANDLER_H
 #define ASSEMBLER_ERROR_HANDLER_H
 
@@ -22,4 +28,5 @@ void init_AssemblerErrorHandler();
 // table conatining all assembler errors
 char* Assembler_Error_Code_Table[ERROR_NUM];
 
+int check_errors();
 #endif

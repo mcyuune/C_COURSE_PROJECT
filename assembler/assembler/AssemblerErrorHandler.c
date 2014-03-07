@@ -45,6 +45,13 @@ void init_AssemblerErrorHandler()
 	Assembler_Error_Code_Table[TYPE_UNVALID_ERR]            = "command type value unvalid. type can be 0 or 1";
 	Assembler_Error_Code_Table[TIME_NOT_FOUND_ERR]          = "command preform times not found in command";
 	Assembler_Error_Code_Table[TIME_UNVALID_ERR]            = "command preform times value unvalid. times can be 0 - 3";
+
+	Assembler_Error_Code_Table[SIGN_NOT_FOUND_ERR]          = "symbol not found in file. assuming extern";
+
+	Assembler_Error_Code_Table[MEMORY_LIMITS_ERR]           = "the assembler program reached its memory limits. stoping file compiling";
+	Assembler_Error_Code_Table[ENTRY_MISS_LABLE_ERR]        = "no lable found for entry. stoping compiling";
+	Assembler_Error_Code_Table[LABLE_IN_USE_ERR]            = "lable already in use";
+	
 }
 
 // this function write error to output
@@ -96,4 +103,11 @@ void log_file_end()
 	}
 
 	fprintf(stderr, "%c%c%c%c" ,LINE_TERMINATOR, LINE_TERMINATOR, LINE_TERMINATOR, LINE_TERMINATOR);
+}
+
+// this function return the numer of errors for this file
+// return int - the num of errors
+int check_errors()
+{
+	return errorCntr;
 }

@@ -73,14 +73,14 @@ void write_to_file(int format, FILE* currFile, int address, void* value,
 		case ENTRY_FILE_OUTPUT_FORMAT:
 		{
 			fprintf(currFile, Assembler_output_format_Code_Table[format], 
-				((char*) value), address); 
+				 address, ((char*) value)); 
 				;
 			break;
 		}
 		case EXTERN_FILE_OUTPUT_FORMAT:
 		{
 			fprintf(currFile, Assembler_output_format_Code_Table[format], 
-				((char*) value), address); 
+				address , ((char*) value)); 
 				;
 			break;
 		}

@@ -1,7 +1,0 @@
-.string
-.G
-.DATA
-.data
-.extern
-.entry
-.  hh

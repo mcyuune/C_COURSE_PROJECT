@@ -7,7 +7,6 @@
 #include "assemblerGlobals.h"
 #include "AssemblerDictionaries.h"
 
-
 #include "AssemblerFileHandler.h"
 #include "AssemblerProcessor.h"
 
@@ -35,11 +34,11 @@ void compile(char* fileName)
 		close_files(file);
 
 		// if validation was correct
-		//if (!ERROR_NUM)
-		//{
+		if (!check_errors())
+		{
 			// create compiled assembler output 
 			create_compiled_output();
-		//}
+		}
 	}
 
 	log_file_end();	

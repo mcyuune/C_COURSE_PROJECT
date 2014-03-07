@@ -9,7 +9,7 @@
 
 int main( int argc, char* argv[] )
 {	
-	int i;	
+	int i;
 
 	argc = 2;
 	//argv[1] = "testLable";
@@ -27,7 +27,7 @@ int main( int argc, char* argv[] )
 	{
 		compile(argv[i]);
 	}
-
+	
 	getchar();
 	
 	return 0;

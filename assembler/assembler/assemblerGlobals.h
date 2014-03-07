@@ -1,3 +1,8 @@
+// this header defined all global variables, structs and types for the Assembler program 
+
+// writen by:     Ma'ayan cohen
+// last modified: 7.3.2014
+
 #ifndef ASSEMBLER_GLOBALS_H
 
 #define ASSEMBLER_GLOBALS_H
@@ -31,6 +36,7 @@
 #define ASSEMBLER_VALIDATOR		"ASSEMBLER_VALIDATOR"
 #define ASSEMBLER_PROCESSOR		"ASSEMBLER_PROCESSOR"
 #define ASSEMBLER_FILE_HANDLER "ASSEMBLER_FILE_HANDLER"
+#define ASSEMBLER_MEMORY       "ASSEMBLER_MEMORY"
 
 // variables for curr file compiling
 char* CURR_FILE_NAME;

@@ -1,3 +1,9 @@
+// this header defines  the assembler parser.
+// it defines global parsing functions for the assembler program
+
+// writen by:     Ma'ayan cohen
+// last modified: 7.3.2014
+
 #ifndef ASSEMBLER_PARSER_H
 #define ASSEMBLER_PARSER_H
 
@@ -42,9 +48,15 @@ int is_saved_word(const char* word, const char** arr, const int max);
 // returns: int - -1 if not found - positive number otherwise
 int is_contain_saved_sign(const char* string, const char* charList, const int max);
 
+// this function change number from ten base to six base
+// input:   1. int value - the number to change base
+// returns: int - number in six base
 int base6(const int);
 
-
+// change to base 2 value for negative nubmers
+// input:   1. int value -the negative nubmer
+// returns: int - number in positive value
+int complete_to_2(int value);
 
 
 #endif

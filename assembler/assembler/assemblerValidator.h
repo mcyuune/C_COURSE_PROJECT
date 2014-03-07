@@ -1,3 +1,10 @@
+// this header defines  the assembler validator.
+// it the core of the file validation. it validate all possible parts of the line,
+// saves validate value to memory and return error if not valid value was found
+
+// writen by:     Ma'ayan cohen
+// last modified: 7.3.2014
+
 #ifndef ASSEMBLER_VALIDATOR_H
 #define ASSEMBLER_VALIDATOR_H
 

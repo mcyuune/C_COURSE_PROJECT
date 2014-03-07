@@ -1,13 +1,20 @@
+// this header defined all global dictionaries for the Assembler program 
+
+// writen by:     Ma'ayan cohen
+// last modified: 7.3.2014
+
 #ifndef ASSEMBLER_FICTIONERIES_H
 #define ASSEMBLER_FICTIONERIES_H
 
 #include "assemblerGlobals.h"
 
+// struct for dicrionary use
 struct operand_data
 {
 	int arrInputsType[4];
 };
 
+// strcut for dictionary use
 struct command_data
 {
 	int command_type;
@@ -155,7 +162,12 @@ enum ASSEMBLER_ERROR_DICTIONARY  {LABLE_LEN_ERR,
 								  DIRECT_INPUT_ERR,
 
 								  OPENING_FILE_ERR,
-								  CLOSING_FILE_ERR
+								  CLOSING_FILE_ERR,
+
+								  SIGN_NOT_FOUND_ERR,
+								  MEMORY_LIMITS_ERR,
+								  ENTRY_MISS_LABLE_ERR,
+								  LABLE_IN_USE_ERR
 							     };
 
 // instruction code table

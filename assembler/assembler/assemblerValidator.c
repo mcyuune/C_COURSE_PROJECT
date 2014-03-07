@@ -74,6 +74,11 @@ int is_proper_lable(const char* lableStart, const char* lableEnd, const char fir
 		{
 			log_error(ASSEMBLER_VALIDATOR , LABLE_SAVED_WORD_ERR, lable);
 		}
+		// check if the lable is in use but not for entry and extern
+		else if (lableType != INSTRUCTION_LABLE && !is_lable_free(lableParsed))
+		{
+			log_error(ASSEMBLER_VALIDATOR , LABLE_IN_USE_ERR, lableParsed);
+		}
 		// check if lable contains saved signs
 		else if(is_contain_saved_sign(lableParsed, Assembler_Signs_Code_Table, SIGN_NUMBER) >= 0)
 		{
@@ -175,7 +180,7 @@ int is_proper_instruction(const char* instructionStart, char** InstructionEnd)
 int is_proper_data(char** endInstruction)
 {	
 	// array for saving the data number values
-	int numbers[MAXLINE];
+	unsigned int numbers[MAXLINE];
 	int last_i = -1;
 	int j = 0, i = 0;
 	int value[1];
@@ -183,6 +188,8 @@ int is_proper_data(char** endInstruction)
 
 	int sign = 1;
 	int tmp_number = 0;
+
+	int calc_num;
 
 	int ret_val = 1;
 
@@ -252,7 +259,11 @@ int is_proper_data(char** endInstruction)
 			// if everything ok - save the number!
 			else
 			{
-				numbers[i] = tmp_number * sign;
+				calc_num =  tmp_number * sign;
+
+				// make the number value positive if negative 
+				numbers[i] = (calc_num < 0)? complete_to_2(calc_num) : calc_num;
+
 				is_empty = 0;
 				// jump over all the digits but do extra for the increase in the end of loop
 				(*endInstruction) += (j - 1);
@@ -819,7 +830,7 @@ int is_proper_direct_or_index_operand(char* operandValue, int* operandType, int*
 				i++;
 			}
 
-			// return 1 if there was digits and there is close ) and there is space after
+			// return 1 if there was digits and there is close ) 
 			if (i > 0 && VarNameEnd[i] == Assembler_Signs_Code_Table[CLOSE_OFFSET_SIGN])
 			{
 				ret_val = 1;
